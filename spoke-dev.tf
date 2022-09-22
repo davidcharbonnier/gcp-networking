@@ -17,7 +17,7 @@
 # tfdoc:file:description Dev spoke VPC and related resources.
 
 module "dev-spoke-project" {
-  source          = "../../../modules/project"
+  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/project?ref=v18.0.0"
   billing_account = var.billing_account.id
   name            = "dev-net-spoke-0"
   parent          = var.folder_ids.networking-dev
@@ -45,7 +45,7 @@ module "dev-spoke-project" {
 }
 
 module "dev-spoke-vpc" {
-  source             = "../../../modules/net-vpc"
+  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/net-vpc?ref=v18.0.0"
   project_id         = module.dev-spoke-project.project_id
   name               = "dev-spoke-0"
   mtu                = 1500
@@ -72,7 +72,7 @@ module "dev-spoke-vpc" {
 }
 
 module "dev-spoke-firewall" {
-  source              = "../../../modules/net-vpc-firewall"
+  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/net-vpc-firewall?ref=v18.0.0"
   project_id          = module.dev-spoke-project.project_id
   network             = module.dev-spoke-vpc.name
   admin_ranges        = []
@@ -85,7 +85,7 @@ module "dev-spoke-firewall" {
 
 module "dev-spoke-cloudnat" {
   for_each       = toset(values(module.dev-spoke-vpc.subnet_regions))
-  source         = "../../../modules/net-cloudnat"
+  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/net-cloudnat?ref=v18.0.0"
   project_id     = module.dev-spoke-project.project_id
   region         = each.value
   name           = "dev-nat-${var.region_trigram[each.value]}"
