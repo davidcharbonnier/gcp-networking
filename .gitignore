@@ -1,1 +1,4 @@
-ludo-*
+.terraform*
+terraform*
+*.auto.tfvars*
+*providers*

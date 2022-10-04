@@ -1,1 +1,0 @@
-outputs_location = "~/Projets/Perso/gcp/fast-config"
