@@ -17,7 +17,7 @@
 # tfdoc:file:description temporary instances for testing
 
 # module "test-vm-landing-0" {
-#   source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/compute-vm?ref=v18.0.0"
+#   source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/compute-vm?ref=v18.0.0"
 #   project_id = module.landing-project.project_id
 #   zone       = "europe-west1-b"
 #   name       = "test-vm-0"
@@ -50,7 +50,7 @@
 # }
 
 # module "test-vm-dev-0" {
-#   source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/compute-vm?ref=v18.0.0"
+#   source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/compute-vm?ref=v18.0.0"
 #   project_id = module.dev-spoke-project.project_id
 #   zone       = "europe-west1-b"
 #   name       = "test-vm-0"
@@ -84,7 +84,7 @@
 # }
 
 # module "test-vm-prod-0" {
-#   source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/compute-vm?ref=v18.0.0"
+#   source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/compute-vm?ref=v18.0.0"
 #   project_id = module.prod-spoke-project.project_id
 #   zone       = "europe-west1-b"
 #   name       = "test-vm-0"

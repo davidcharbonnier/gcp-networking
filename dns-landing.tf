@@ -19,7 +19,7 @@
 # forwarding to on-prem DNS resolvers
 
 # module "onprem-example-dns-forwarding" {
-#   source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/dns?ref=v18.0.0"
+#   source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v18.0.0"
 #   project_id      = module.landing-project.project_id
 #   type            = "forwarding"
 #   name            = "example-com"
@@ -29,7 +29,7 @@
 # }
 
 # module "reverse-10-dns-forwarding" {
-#   source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/dns?ref=v18.0.0"
+#   source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v18.0.0"
 #   project_id      = module.landing-project.project_id
 #   type            = "forwarding"
 #   name            = "root-reverse-10"
@@ -39,7 +39,7 @@
 # }
 
 # module "gcp-example-dns-private-zone" {
-#   source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/dns?ref=v18.0.0"
+#   source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v18.0.0"
 #   project_id      = module.landing-project.project_id
 #   type            = "private"
 #   name            = "gcp-example-com"
@@ -51,7 +51,7 @@
 # }
 
 module "davidcharbonnier-dns-public-zone" {
-  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/dns?ref=v18.0.0"
+  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v18.0.0"
   project_id      = module.landing-project.project_id
   type            = "public"
   name            = "davidcharbonnier-fr"
@@ -75,7 +75,7 @@ module "davidcharbonnier-dns-public-zone" {
 # Google API zone to trigger Private Access
 
 module "googleapis-private-zone" {
-  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/dns?ref=v18.0.0"
+  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v18.0.0"
   project_id      = module.landing-project.project_id
   type            = "private"
   name            = "googleapis-com"

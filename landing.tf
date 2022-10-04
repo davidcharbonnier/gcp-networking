@@ -17,7 +17,7 @@
 # tfdoc:file:description Landing VPC and related resources.
 
 module "landing-project" {
-  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/project?ref=v18.0.0"
+  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v18.0.0"
   billing_account = var.billing_account.id
   name            = "prod-net-landing-0"
   parent          = var.folder_ids.networking-prod
@@ -44,7 +44,7 @@ module "landing-project" {
 }
 
 module "landing-vpc" {
-  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/net-vpc?ref=v18.0.0"
+  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v18.0.0"
   project_id = module.landing-project.project_id
   name       = "prod-landing-0"
   mtu        = 1500
@@ -74,7 +74,7 @@ module "landing-vpc" {
 }
 
 module "landing-firewall" {
-  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/net-vpc-firewall?ref=v18.0.0"
+  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v18.0.0"
   project_id          = module.landing-project.project_id
   network             = module.landing-vpc.name
   admin_ranges        = []
@@ -86,7 +86,7 @@ module "landing-firewall" {
 }
 
 module "landing-nat-nane1" {
-  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/net-cloudnat?ref=v18.0.0"
+  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v18.0.0"
   project_id     = module.landing-project.project_id
   region         = "northamerica-northeast1"
   name           = "nane1"

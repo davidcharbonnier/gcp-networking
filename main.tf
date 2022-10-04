@@ -40,7 +40,7 @@ locals {
 }
 
 module "folder" {
-  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git/modules/folder?ref=v18.0.0"
+  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder?ref=v18.0.0"
   parent        = "organizations/${var.organization.id}"
   name          = "Networking"
   folder_create = var.folder_ids.networking == null
