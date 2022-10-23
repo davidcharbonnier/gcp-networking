@@ -1,7 +1,7 @@
 # skip boilerplate check
 
 region: northamerica-northeast1
-description: Default subnet for dev gke nodes
+description: Default subnet for prod gke nodes
 ip_cidr_range: 10.64.0.0/24
 secondary_ip_range:
    pods: 100.64.0.0/16
