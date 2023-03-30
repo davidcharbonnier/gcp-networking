@@ -59,7 +59,7 @@ module "davidcharbonnier-dns-public-zone" {
   client_networks = [module.landing-vpc.self_link]
   recordsets = {
     "MX "         = { type = "MX", ttl = 3600, records = ["5 alt2.aspmx.l.google.com.", "10 alt4.aspmx.l.google.com.", "10 alt3.aspmx.l.google.com.", "5 alt1.aspmx.l.google.com.", "1 aspmx.l.google.com."] }
-    "ALIAS "      = { type = "ALIAS", ttl = 0, records = ["apex-loadbalancer.netlify.com"] }
+    "A "          = { type = "A", ttl = 0, records = ["75.2.60.5"] }
     "CNAME www"   = { type = "CNAME", ttl = 0, records = ["davidcharbonnier.netlify.app."] }
     "A budget"    = { type = "A", ttl = 0, records = ["151.80.37.237"] }
     "A cloud"     = { type = "A", ttl = 0, records = ["151.80.37.237"] }
