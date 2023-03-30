@@ -34,7 +34,7 @@ locals {
 
 module "landing-to-onprem-ew1-vpn" {
   count                 = local.enable_onprem_vpn ? 1 : 0
-  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v18.0.0"
+  source                = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v18.0.0"
   project_id            = module.landing-project.project_id
   network               = module.landing-vpc.self_link
   region                = "europe-west1"

@@ -33,7 +33,7 @@
 # root zone peering to landing to centralize configuration; remove if unneeded
 
 module "prod-landing-root-dns-peering" {
-  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v18.0.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v18.0.0"
   project_id      = module.prod-spoke-project.project_id
   type            = "peering"
   name            = "prod-root-dns-peering"
