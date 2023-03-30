@@ -51,7 +51,7 @@
 # }
 
 module "davidcharbonnier-dns-public-zone" {
-  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v18.0.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v18.0.0"
   project_id      = module.landing-project.project_id
   type            = "public"
   name            = "davidcharbonnier-fr"
@@ -59,7 +59,8 @@ module "davidcharbonnier-dns-public-zone" {
   client_networks = [module.landing-vpc.self_link]
   recordsets = {
     "MX "         = { type = "MX", ttl = 3600, records = ["5 alt2.aspmx.l.google.com.", "10 alt4.aspmx.l.google.com.", "10 alt3.aspmx.l.google.com.", "5 alt1.aspmx.l.google.com.", "1 aspmx.l.google.com."] }
-    "A "          = { type = "A", ttl = 0, records = ["151.80.37.237"] }
+    "ALIAS "      = { type = "ALIAS", ttl = 0, records = ["apex-loadbalancer.netlify.com"] }
+    "CNAME www"   = { type = "CNAME", ttl = 0, records = ["davidcharbonnier.netlify.app."] }
     "A budget"    = { type = "A", ttl = 0, records = ["151.80.37.237"] }
     "A cloud"     = { type = "A", ttl = 0, records = ["151.80.37.237"] }
     "A cloud-new" = { type = "A", ttl = 0, records = ["34.95.12.204"] }
@@ -75,7 +76,7 @@ module "davidcharbonnier-dns-public-zone" {
 # Google API zone to trigger Private Access
 
 module "googleapis-private-zone" {
-  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v18.0.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v18.0.0"
   project_id      = module.landing-project.project_id
   type            = "private"
   name            = "googleapis-com"
