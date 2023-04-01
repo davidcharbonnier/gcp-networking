@@ -62,9 +62,7 @@ module "davidcharbonnier-dns-public-zone" {
     "A "        = { type = "A", ttl = 0, records = ["75.2.60.5"] }
     "CNAME www" = { type = "CNAME", ttl = 0, records = ["davidcharbonnier.netlify.app."] }
     "A budget"  = { type = "A", ttl = 0, records = ["151.80.37.237"] }
-    "A cloud"   = { type = "A", ttl = 0, records = ["151.80.37.237"] }
     "A proxy"   = { type = "A", ttl = 0, records = ["151.80.37.237"] }
-    "A test"    = { type = "A", ttl = 0, records = ["34.95.12.204"] }
     "CAA "      = { type = "CAA", ttl = 0, records = ["0 iodef \"mailto:contact@davidcharbonnier.fr\"", "0 issue \"letsencrypt.org\""] }
     "TXT "      = { type = "TXT", ttl = 0, records = ["\"google-site-verification=ufzEd-TjmFzEHsejF-PB0PIVwwlCTFiqP7JOyVx4u9s\""] }
     "SPF "      = { type = "SPF", ttl = 0, records = ["\"v=spf1 include:_spf.google.com ~all\""] }
