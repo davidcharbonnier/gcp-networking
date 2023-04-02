@@ -98,16 +98,6 @@ variable "l7ilb_subnets" {
       { ip_cidr_range = "10.128.61.0/24", region = "northamerica-northeast2" }
     ]
   }
-  # default = {
-  #   prod = [
-  #     { ip_cidr_range = "10.128.92.0/24", region = "europe-west1" },
-  #     { ip_cidr_range = "10.128.93.0/24", region = "europe-west4" }
-  #   ]
-  #   dev = [
-  #     { ip_cidr_range = "10.128.60.0/24", region = "europe-west1" },
-  #     { ip_cidr_range = "10.128.61.0/24", region = "europe-west4" }
-  #   ]
-  # }
 }
 
 variable "organization" {
@@ -155,23 +145,24 @@ variable "psa_ranges" {
       })
     })
   })
-  default = null
-  # default = {
-  #   dev = {
-  #     ranges = {
-  #       cloudsql-mysql     = "10.128.62.0/24"
-  #       cloudsql-sqlserver = "10.128.63.0/24"
-  #     }
-  #     routes = null
-  #   }
-  #   prod = {
-  #     ranges = {
-  #       cloudsql-mysql     = "10.128.94.0/24"
-  #       cloudsql-sqlserver = "10.128.95.0/24"
-  #     }
-  #     routes = null
-  #   }
-  # }
+  default = {
+    dev = {
+      ranges = {
+        cloudsql-mysql      = "10.128.62.0/24"
+        cloudsql-sqlserver  = "10.128.63.0/24"
+        cloudsql-postgresql = "10.128.64.0/24"
+      }
+      routes = null
+    }
+    prod = {
+      ranges = {
+        cloudsql-mysql      = "10.128.94.0/24"
+        cloudsql-sqlserver  = "10.128.95.0/24"
+        cloudsql-postgresql = "10.128.96.0/24"
+      }
+      routes = null
+    }
+  }
 }
 
 variable "region_trigram" {
@@ -181,10 +172,6 @@ variable "region_trigram" {
     northamerica-northeast1 = "nane1"
     northamerica-northeast2 = "nane2"
   }
-  # default = {
-  #   europe-west1 = "ew1"
-  #   europe-west3 = "ew3"
-  # }
 }
 
 variable "router_onprem_configs" {
