@@ -1,0 +1,5 @@
+# skip boilerplate check
+
+region: northamerica-northeast1
+description: Subnet for serverless vpc access in dev infra-hosting project
+ip_cidr_range: 10.128.35.0/28
