@@ -15,7 +15,7 @@
  */
 
 variable "automation" {
-  # tfdoc:variable:source 00-bootstrap
+  # tfdoc:variable:source 0-bootstrap
   description = "Automation resources created by the bootstrap stage."
   type = object({
     outputs_bucket = string
@@ -23,33 +23,20 @@ variable "automation" {
 }
 
 variable "billing_account" {
-  # tfdoc:variable:source 00-bootstrap
-  description = "Billing account id and organization id ('nnnnnnnn' or null)."
+  # tfdoc:variable:source 0-bootstrap
+  description = "Billing account id. If billing account is not part of the same org set `is_org_level` to false."
   type = object({
-    id              = string
-    organization_id = number
+    id           = string
+    is_org_level = optional(bool, true)
   })
-}
-
-variable "custom_adv" {
-  description = "Custom advertisement definitions in name => range format."
-  type        = map(string)
-  default = {
-    cloud_dns             = "35.199.192.0/19"
-    gcp_all               = "10.128.0.0/16"
-    gcp_dev               = "10.128.32.0/19"
-    gcp_landing           = "10.128.0.0/19"
-    gcp_prod              = "10.128.64.0/19"
-    googleapis_private    = "199.36.153.8/30"
-    googleapis_restricted = "199.36.153.4/30"
-    rfc_1918_10           = "10.0.0.0/8"
-    rfc_1918_172          = "172.16.0.0/12"
-    rfc_1918_192          = "192.168.0.0/16"
+  validation {
+    condition     = var.billing_account.is_org_level != null
+    error_message = "Invalid `null` value for `billing_account.is_org_level`."
   }
 }
 
 variable "custom_roles" {
-  # tfdoc:variable:source 00-bootstrap
+  # tfdoc:variable:source 0-bootstrap
   description = "Custom roles defined at the org level, in key => id format."
   type = object({
     service_project_network_admin = string
@@ -57,23 +44,37 @@ variable "custom_roles" {
   default = null
 }
 
-variable "data_dir" {
-  description = "Relative path for the folder storing configuration data for network resources."
-  type        = string
-  default     = "data"
-}
-
 variable "dns" {
   description = "Onprem DNS resolvers."
   type        = map(list(string))
   default     = null
-  # default = {
-  #   onprem = ["10.0.200.3"]
-  # }
+  #default = {
+  #  onprem = ["10.0.200.3"]
+  #}
+}
+
+variable "factories_config" {
+  description = "Configuration for network resource factories."
+  type = object({
+    data_dir             = optional(string, "data")
+    firewall_policy_name = optional(string, "factory")
+  })
+  default = {
+    data_dir = "data"
+  }
+  nullable = false
+  validation {
+    condition     = var.factories_config.data_dir != null
+    error_message = "Data folder needs to be non-null."
+  }
+  validation {
+    condition     = var.factories_config.firewall_policy_name != null
+    error_message = "Firewall policy name needs to be non-null."
+  }
 }
 
 variable "folder_ids" {
-  # tfdoc:variable:source 01-resman
+  # tfdoc:variable:source 1-resman
   description = "Folders to be used for the networking resources in folders/nnnnnnnnnnn format. If null, folder will be created."
   type = object({
     networking      = string
@@ -82,26 +83,8 @@ variable "folder_ids" {
   })
 }
 
-variable "l7ilb_subnets" {
-  description = "Subnets used for L7 ILBs."
-  type = map(list(object({
-    ip_cidr_range = string
-    region        = string
-  })))
-  default = {
-    prod = [
-      { ip_cidr_range = "10.128.92.0/24", region = "northamerica-northeast1" },
-      { ip_cidr_range = "10.128.93.0/24", region = "northamerica-northeast2" }
-    ]
-    dev = [
-      { ip_cidr_range = "10.128.60.0/24", region = "northamerica-northeast1" },
-      { ip_cidr_range = "10.128.61.0/24", region = "northamerica-northeast2" }
-    ]
-  }
-}
-
 variable "organization" {
-  # tfdoc:variable:source 00-bootstrap
+  # tfdoc:variable:source 0-bootstrap
   description = "Organization details."
   type = object({
     domain      = string
@@ -117,7 +100,7 @@ variable "outputs_location" {
 }
 
 variable "prefix" {
-  # tfdoc:variable:source 00-bootstrap
+  # tfdoc:variable:source 0-bootstrap
   description = "Prefix used for resources that need unique names. Use 9 characters or less."
   type        = string
 
@@ -128,7 +111,7 @@ variable "prefix" {
 }
 
 variable "psa_ranges" {
-  description = "IP ranges used for Private Service Access (e.g. CloudSQL)."
+  description = "IP ranges used for Private Service Access (CloudSQL, etc.)."
   type = object({
     dev = object({
       ranges = map(string)
@@ -165,36 +148,20 @@ variable "psa_ranges" {
   }
 }
 
-variable "region_trigram" {
-  description = "Short names for GCP regions."
-  type        = map(string)
+variable "regions" {
+  description = "Region definitions."
+  type = object({
+    primary   = string
+    secondary = string
+  })
   default = {
-    northamerica-northeast1 = "nane1"
-    northamerica-northeast2 = "nane2"
+    primary   = "northamerica-northeast1"
+    secondary = "northamerica-northeast2"
   }
 }
 
-variable "router_onprem_configs" {
-  description = "Configurations for routers used for onprem connectivity."
-  type = map(object({
-    adv = object({
-      custom  = list(string)
-      default = bool
-    })
-    asn = number
-  }))
-  default = null
-  # default = {
-  #   landing-ew1 = {
-  #     asn = "65533"
-  #     adv = null
-  #     # adv = { default = false, custom = [] }
-  #   }
-  # }
-}
-
 variable "service_accounts" {
-  # tfdoc:variable:source 01-resman
+  # tfdoc:variable:source 1-resman
   description = "Automation service accounts in name => email format."
   type = object({
     data-platform-dev    = string
@@ -207,59 +174,45 @@ variable "service_accounts" {
   default = null
 }
 
-variable "vpn_onprem_configs" {
-  description = "VPN gateway configuration for onprem interconnection."
-  type = map(object({
-    adv = object({
-      default = bool
-      custom  = list(string)
-    })
-    peer_external_gateway = object({
+variable "vpn_onprem_primary_config" {
+  description = "VPN gateway configuration for onprem interconnection in the primary region."
+  type = object({
+    peer_external_gateways = map(object({
       redundancy_type = string
-      interfaces = list(object({
-        id         = number
-        ip_address = string
+      interfaces      = list(string)
+    }))
+    router_config = object({
+      create    = optional(bool, true)
+      asn       = number
+      name      = optional(string)
+      keepalive = optional(number)
+      custom_advertise = optional(object({
+        all_subnets = bool
+        ip_ranges   = map(string)
       }))
     })
-    tunnels = list(object({
-      peer_asn                        = number
-      peer_external_gateway_interface = number
-      secret                          = string
-      session_range                   = string
+    tunnels = map(object({
+      bgp_peer = object({
+        address        = string
+        asn            = number
+        route_priority = optional(number, 1000)
+        custom_advertise = optional(object({
+          all_subnets          = bool
+          all_vpc_subnets      = bool
+          all_peer_vpc_subnets = bool
+          ip_ranges            = map(string)
+        }))
+      })
+      # each BGP session on the same Cloud Router must use a unique /30 CIDR
+      # from the 169.254.0.0/16 block.
+      bgp_session_range               = string
+      ike_version                     = optional(number, 2)
+      peer_external_gateway_interface = optional(number)
+      peer_gateway                    = optional(string, "default")
+      router                          = optional(string)
+      shared_secret                   = optional(string)
       vpn_gateway_interface           = number
     }))
-  }))
+  })
   default = null
-  # default = {
-  #   landing-ew1 = {
-  #     adv = {
-  #       default = false
-  #       custom = [
-  #         "cloud_dns", "googleapis_private", "googleapis_restricted", "gcp_all"
-  #       ]
-  #     }
-  #     peer_external_gateway = {
-  #       redundancy_type = "SINGLE_IP_INTERNALLY_REDUNDANT"
-  #       interfaces = [
-  #         { id = 0, ip_address = "8.8.8.8" },
-  #       ]
-  #     }
-  #     tunnels = [
-  #       {
-  #         peer_asn                        = 65534
-  #         peer_external_gateway_interface = 0
-  #         secret                          = "foobar"
-  #         session_range                   = "169.254.1.0/30"
-  #         vpn_gateway_interface           = 0
-  #       },
-  #       {
-  #         peer_asn                        = 65534
-  #         peer_external_gateway_interface = 0
-  #         secret                          = "foobar"
-  #         session_range                   = "169.254.1.4/30"
-  #         vpn_gateway_interface           = 1
-  #       }
-  #     ]
-  #   }
-  # }
 }

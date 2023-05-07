@@ -17,46 +17,21 @@
 # tfdoc:file:description VPN between landing and onprem.
 
 locals {
-  enable_onprem_vpn = var.vpn_onprem_configs != null
-  bgp_peer_options_onprem = local.enable_onprem_vpn == false ? null : {
-    for k, v in var.vpn_onprem_configs :
-    k => v.adv == null ? null : {
-      advertise_groups = []
-      advertise_ip_ranges = {
-        for adv in(v.adv == null ? [] : v.adv.custom) :
-        var.custom_adv[adv] => adv
-      }
-      advertise_mode = try(v.adv.default, false) ? "DEFAULT" : "CUSTOM"
-      route_priority = null
-    }
-  }
+  onprem_peer_gateways = try(
+    var.vpn_onprem_primary_config.peer_external_gateways, {}
+  )
 }
 
-module "landing-to-onprem-ew1-vpn" {
-  count                 = local.enable_onprem_vpn ? 1 : 0
-  source                = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v18.0.0"
-  project_id            = module.landing-project.project_id
-  network               = module.landing-vpc.self_link
-  region                = "europe-west1"
-  name                  = "vpn-to-onprem-ew1"
-  router_create         = true
-  router_name           = "landing-onprem-vpn-ew1"
-  router_asn            = var.router_onprem_configs.landing-ew1.asn
-  peer_external_gateway = var.vpn_onprem_configs.landing-ew1.peer_external_gateway
-  tunnels = {
-    for t in var.vpn_onprem_configs.landing-ew1.tunnels :
-    "remote-${t.vpn_gateway_interface}-${t.peer_external_gateway_interface}" => {
-      bgp_peer = {
-        address = cidrhost(t.session_range, 1)
-        asn     = t.peer_asn
-      }
-      bgp_peer_options                = local.bgp_peer_options_onprem.landing-ew1
-      bgp_session_range               = "${cidrhost(t.session_range, 2)}/30"
-      ike_version                     = 2
-      peer_external_gateway_interface = t.peer_external_gateway_interface
-      router                          = null
-      shared_secret                   = t.secret
-      vpn_gateway_interface           = t.vpn_gateway_interface
-    }
+module "landing-to-onprem-primary-vpn" {
+  count         = var.vpn_onprem_primary_config == null ? 0 : 1
+  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v21.0.0"
+  project_id    = module.landing-project.project_id
+  network       = module.landing-vpc.self_link
+  region        = var.regions.primary
+  name          = "vpn-to-onprem-${local.region_shortnames[var.regions.primary]}"
+  router_config = try(var.vpn_onprem_primary_config.router_config, {})
+  peer_gateways = {
+    for k, v in local.onprem_peer_gateways : k => { external = v }
   }
+  tunnels = try(var.vpn_onprem_primary_config.tunnels, {})
 }

@@ -18,22 +18,22 @@
 
 # GCP-specific environment zone
 
-# module "prod-dns-private-zone" {
-#   source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v18.0.0"
-#   project_id      = module.prod-spoke-project.project_id
-#   type            = "private"
-#   name            = "prod-gcp-example-com"
-#   domain          = "prod.gcp.example.com."
-#   client_networks = [module.landing-vpc.self_link]
-#   recordsets = {
-#     "A localhost" = { type = "A", ttl = 300, records = ["127.0.0.1"] }
-#   }
-# }
+#module "prod-dns-private-zone" {
+#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
+#  project_id      = module.prod-spoke-project.project_id
+#  type            = "private"
+#  name            = "prod-gcp-example-com"
+#  domain          = "prod.gcp.example.com."
+#  client_networks = [module.landing-vpc.self_link]
+#  recordsets = {
+#    "A localhost" = { records = ["127.0.0.1"] }
+#  }
+#}
 
 # root zone peering to landing to centralize configuration; remove if unneeded
 
 module "prod-landing-root-dns-peering" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v18.0.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
   project_id      = module.prod-spoke-project.project_id
   type            = "peering"
   name            = "prod-root-dns-peering"
@@ -42,12 +42,12 @@ module "prod-landing-root-dns-peering" {
   peer_network    = module.landing-vpc.self_link
 }
 
-# module "prod-reverse-10-dns-peering" {
-#   source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v18.0.0"
-#   project_id      = module.prod-spoke-project.project_id
-#   type            = "peering"
-#   name            = "prod-reverse-10-dns-peering"
-#   domain          = "10.in-addr.arpa."
-#   client_networks = [module.prod-spoke-vpc.self_link]
-#   peer_network    = module.landing-vpc.self_link
-# }
+#module "prod-reverse-10-dns-peering" {
+#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
+#  project_id      = module.prod-spoke-project.project_id
+#  type            = "peering"
+#  name            = "prod-reverse-10-dns-peering"
+#  domain          = "10.in-addr.arpa."
+#  client_networks = [module.prod-spoke-vpc.self_link]
+#  peer_network    = module.landing-vpc.self_link
+#}
