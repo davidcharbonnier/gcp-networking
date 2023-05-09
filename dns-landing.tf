@@ -61,7 +61,7 @@ module "davidcharbonnier-dns-public-zone" {
     # Gmail
     "MX "                   = { ttl = 3600, records = ["5 alt2.aspmx.l.google.com.", "10 alt4.aspmx.l.google.com.", "10 alt3.aspmx.l.google.com.", "5 alt1.aspmx.l.google.com.", "1 aspmx.l.google.com."] }
     "SPF "                  = { ttl = 0, records = ["\"v=spf1 include:_spf.google.com ~all\""] }
-    "TXT google._domainkey" = { ttl = 0, records = ["v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwkn0FEXhDrJO6OdDnCeN6jZbZZlKpxOIqsS5qABeihxCyWjqRqpS1Aslr4dyNudVn4r5xoVYt/eGURSnwFurJYDdPXj4lGf19dMugP3qCXQQT/yqOlJzf0N+YCiAGr5ZdB2BXhimacZwfAebfnQWpyoNntQpRtWmTXRP0d29S/FzWxZTYHBAMP07nhXWShg988O4C8/ET6/9zEUF/QeJFiMAxew2Cpwc97LApeG5wr7qe+Vqt/q+IG+WQVD0klygcxD6zWOwHtviqocQgleCY64CyrgHX8GE4krs/on7o5bC22Nie2OggywVUxczQvxTzOO2EDzRhvXzghuhT3k25QIDAQAB"] }
+    "TXT google._domainkey" = { ttl = 0, records = ["\"v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwkn0FEXhDrJO6OdDnCeN6jZbZZlKpxOIqsS5qABeihxCyWjqRqpS1Aslr4dyNudVn4r5xoVYt/eGURSnwFurJYDdPXj4lGf19dMugP3qCXQQT/yqOlJzf0N+YCiAGr5ZdB2BXhimacZwfAebfnQWpyoNntQpRtWmTXRP0d29S/FzWxZTYHBAMP07nhXWShg988O4C8/ET6/9zEUF/QeJFiMAxew2Cpwc97LApeG5wr7qe+Vqt/q+IG+WQVD0klygcxD6zWOwHtviqocQgleCY64CyrgHX8GE4krs/on7o5bC22Nie2OggywVUxczQvxTzOO2EDzRhvXzghuhT3k25QIDAQAB\""] }
     # Netlify
     "A "        = { ttl = 0, records = ["75.2.60.5"] }
     "CNAME www" = { ttl = 0, records = ["davidcharbonnier.netlify.app."] }
@@ -69,6 +69,9 @@ module "davidcharbonnier-dns-public-zone" {
     "CAA " = { ttl = 0, records = ["0 iodef \"mailto:contact@davidcharbonnier.fr\"", "0 issue \"letsencrypt.org\""] }
     # Google Workspace
     "TXT " = { ttl = 0, records = ["\"google-site-verification=ufzEd-TjmFzEHsejF-PB0PIVwwlCTFiqP7JOyVx4u9s\""] }
+  }
+  dnssec_config = {
+    state = "on"
   }
 }
 
