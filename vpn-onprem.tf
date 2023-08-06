@@ -24,7 +24,7 @@ locals {
 
 module "landing-to-onprem-primary-vpn" {
   count         = var.vpn_onprem_primary_config == null ? 0 : 1
-  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v21.0.0"
+  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v24.0.0"
   project_id    = module.landing-project.project_id
   network       = module.landing-vpc.self_link
   region        = var.regions.primary

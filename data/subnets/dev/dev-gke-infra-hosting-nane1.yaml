@@ -1,8 +1,0 @@
-# skip boilerplate check
-
-region: northamerica-northeast1
-description: Subnet for dev infra-hosting gke cluster
-ip_cidr_range: 10.128.33.0/24
-secondary_ip_range:
-   pods: 100.66.0.0/16
-   services: 192.168.33.0/24

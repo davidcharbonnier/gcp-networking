@@ -45,20 +45,8 @@ variable "serverless_connector_config" {
     })
   })
   default = {
-    dev-primary = {
-      machine_type = "f1-micro"
-      instances = {
-        max = 3
-        min = 2
-      }
-    }
-    prod-primary = {
-      machine_type = "f1-micro"
-      instances = {
-        max = 3
-        min = 2
-      }
-    }
+    dev-primary  = {}
+    prod-primary = {}
   }
   nullable = false
 }

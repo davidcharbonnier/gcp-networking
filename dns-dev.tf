@@ -18,8 +18,13 @@
 
 # GCP-specific environment zone
 
-#module "dev-dns-private-zone" {
-#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
+moved {
+  from = module.dev-dns-private-zone
+  to   = module.dev-dns-priv-example
+}
+
+#module "dev-dns-priv-example" {
+#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v24.0.0"
 #  project_id      = module.dev-spoke-project.project_id
 #  type            = "private"
 #  name            = "dev-gcp-example-com"
@@ -32,8 +37,13 @@
 
 # root zone peering to landing to centralize configuration; remove if unneeded
 
-module "dev-landing-root-dns-peering" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
+moved {
+  from = module.dev-landing-root-dns-peering
+  to   = module.dev-dns-peer-landing-root
+}
+
+module "dev-dns-peer-landing-root" {
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v24.0.0"
   project_id      = module.dev-spoke-project.project_id
   type            = "peering"
   name            = "dev-root-dns-peering"
@@ -42,8 +52,13 @@ module "dev-landing-root-dns-peering" {
   peer_network    = module.landing-vpc.self_link
 }
 
-#module "dev-reverse-10-dns-peering" {
-#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
+moved {
+  from = module.dev-reverse-10-dns-peering
+  to   = module.dev-dns-peer-landing-rev-10
+}
+
+#module "dev-dns-peer-landing-rev-10" {
+#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v24.0.0"
 #  project_id      = module.dev-spoke-project.project_id
 #  type            = "peering"
 #  name            = "dev-reverse-10-dns-peering"

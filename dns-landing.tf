@@ -18,8 +18,13 @@
 
 # forwarding to on-prem DNS resolvers
 
-#module "onprem-example-dns-forwarding" {
-#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
+moved {
+  from = module.onprem-example-dns-forwarding
+  to   = module.landing-dns-fwd-onprem-example
+}
+
+#module "landing-dns-fwd-onprem-example" {
+#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v24.0.0"
 #  project_id      = module.landing-project.project_id
 #  type            = "forwarding"
 #  name            = "example-com"
@@ -28,8 +33,13 @@
 #  forwarders      = { for ip in var.dns.onprem : ip => null }
 #}
 
-#module "reverse-10-dns-forwarding" {
-#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
+moved {
+  from = module.reverse-10-dns-forwarding
+  to   = module.landing-dns-fwd-onprem-rev-10
+}
+
+#module "landing-dns-fwd-onprem-rev-10" {
+#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v24.0.0"
 #  project_id      = module.landing-project.project_id
 #  type            = "forwarding"
 #  name            = "root-reverse-10"
@@ -38,8 +48,13 @@
 #  forwarders      = { for ip in var.dns.onprem : ip => null }
 #}
 
-#module "gcp-example-dns-private-zone" {
-#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
+moved {
+  from = module.gcp-example-dns-private-zone
+  to   = module.landing-dns-priv-gcp
+}
+
+#module "landing-dns-priv-gcp" {
+#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v24.0.0"
 #  project_id      = module.landing-project.project_id
 #  type            = "private"
 #  name            = "gcp-example-com"
@@ -50,8 +65,22 @@
 #  }
 #}
 
+# Google APIs via response policies
+
+module "landing-dns-policy-googleapis" {
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns-response-policy?ref=v24.0.0"
+  project_id = module.landing-project.project_id
+  name       = "googleapis"
+  networks = {
+    landing = module.landing-vpc.self_link
+  }
+  rules_file = var.factories_config.dns_policy_rules_file
+}
+
+# davidcharbonnier.fr public zone
+
 module "davidcharbonnier-dns-public-zone" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v24.0.0"
   project_id      = module.landing-project.project_id
   type            = "public"
   name            = "davidcharbonnier-fr"
@@ -72,85 +101,5 @@ module "davidcharbonnier-dns-public-zone" {
   }
   dnssec_config = {
     state = "on"
-  }
-}
-
-# Google APIs
-
-module "googleapis-private-zone" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
-  project_id      = module.landing-project.project_id
-  type            = "private"
-  name            = "googleapis-com"
-  domain          = "googleapis.com."
-  client_networks = [module.landing-vpc.self_link]
-  recordsets = {
-    "A private" = { records = [
-      "199.36.153.8", "199.36.153.9", "199.36.153.10", "199.36.153.11"
-    ] }
-    "A restricted" = { records = [
-      "199.36.153.4", "199.36.153.5", "199.36.153.6", "199.36.153.7"
-    ] }
-    "CNAME *" = { records = ["private.googleapis.com."] }
-  }
-}
-
-module "gcrio-private-zone" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
-  project_id      = module.landing-project.project_id
-  type            = "private"
-  name            = "gcr-io"
-  domain          = "gcr.io."
-  client_networks = [module.landing-vpc.self_link]
-  recordsets = {
-    "A gcr.io." = { ttl = 300, records = [
-      "199.36.153.8", "199.36.153.9", "199.36.153.10", "199.36.153.11"
-    ] }
-    "CNAME *" = { ttl = 300, records = ["private.googleapis.com."] }
-  }
-}
-
-module "packages-private-zone" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
-  project_id      = module.landing-project.project_id
-  type            = "private"
-  name            = "packages-cloud"
-  domain          = "packages.cloud.google.com."
-  client_networks = [module.landing-vpc.self_link]
-  recordsets = {
-    "A packages.cloud.google.com." = { ttl = 300, records = [
-      "199.36.153.8", "199.36.153.9", "199.36.153.10", "199.36.153.11"
-    ] }
-    "CNAME *" = { ttl = 300, records = ["private.googleapis.com."] }
-  }
-}
-
-module "pkgdev-private-zone" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
-  project_id      = module.landing-project.project_id
-  type            = "private"
-  name            = "pkg-dev"
-  domain          = "pkg.dev."
-  client_networks = [module.landing-vpc.self_link]
-  recordsets = {
-    "A pkg.dev." = { ttl = 300, records = [
-      "199.36.153.8", "199.36.153.9", "199.36.153.10", "199.36.153.11"
-    ] }
-    "CNAME *" = { ttl = 300, records = ["private.googleapis.com."] }
-  }
-}
-
-module "pkigoog-private-zone" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v21.0.0"
-  project_id      = module.landing-project.project_id
-  type            = "private"
-  name            = "pki-goog"
-  domain          = "pki.goog."
-  client_networks = [module.landing-vpc.self_link]
-  recordsets = {
-    "A pki.goog." = { ttl = 300, records = [
-      "199.36.153.8", "199.36.153.9", "199.36.153.10", "199.36.153.11"
-    ] }
-    "CNAME *" = { ttl = 300, records = ["private.googleapis.com."] }
   }
 }
