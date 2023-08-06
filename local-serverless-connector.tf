@@ -28,29 +28,33 @@ locals {
 }
 
 module "dev-spoke-vpc-serverless" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v21.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v24.0.0"
   project_id = module.dev-spoke-project.project_id
   name       = module.dev-spoke-vpc.name
   vpc_create = false
-  subnets = [{
+  subnets = var.serverless_connector_config.dev-primary == null ? [] : [{
     name          = "access-connector"
     description   = "VPC Serverless Connector for the primary region."
     ip_cidr_range = var.serverless_connector_config.dev-primary.ip_cidr_range
     region        = var.regions.primary
   }]
+  # these should be create from the main VPC
+  create_googleapis_routes = null
 }
 
 module "prod-spoke-vpc-serverless" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v21.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v24.0.0"
   project_id = module.prod-spoke-project.project_id
   name       = module.prod-spoke-vpc.name
   vpc_create = false
-  subnets = [{
+  subnets = var.serverless_connector_config.prod-primary == null ? [] : [{
     name          = "access-connector"
     description   = "VPC Serverless Connector for the primary region."
     ip_cidr_range = var.serverless_connector_config.prod-primary.ip_cidr_range
     region        = var.regions.primary
   }]
+  # these should be create from the main VPC
+  create_googleapis_routes = null
 }
 
 resource "google_vpc_access_connector" "dev-primary" {

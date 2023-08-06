@@ -14,6 +14,31 @@
  * limitations under the License.
  */
 
+variable "alert_config" {
+  description = "Configuration for monitoring alerts."
+  type = object({
+    vpn_tunnel_established = optional(object({
+      auto_close            = optional(string, null)
+      duration              = optional(string, "120s")
+      enabled               = optional(bool, true)
+      notification_channels = optional(list(string), [])
+      user_labels           = optional(map(string), {})
+    }))
+    vpn_tunnel_bandwidth = optional(object({
+      auto_close            = optional(string, null)
+      duration              = optional(string, "120s")
+      enabled               = optional(bool, true)
+      notification_channels = optional(list(string), [])
+      threshold_mbys        = optional(string, "187.5")
+      user_labels           = optional(map(string), {})
+    }))
+  })
+  default = {
+    vpn_tunnel_established = {}
+    vpn_tunnel_bandwidth   = {}
+  }
+}
+
 variable "automation" {
   # tfdoc:variable:source 0-bootstrap
   description = "Automation resources created by the bootstrap stage."
@@ -47,17 +72,17 @@ variable "custom_roles" {
 variable "dns" {
   description = "Onprem DNS resolvers."
   type        = map(list(string))
-  default     = null
-  #default = {
-  #  onprem = ["10.0.200.3"]
-  #}
+  default = {
+    onprem = ["10.0.200.3"]
+  }
 }
 
 variable "factories_config" {
   description = "Configuration for network resource factories."
   type = object({
-    data_dir             = optional(string, "data")
-    firewall_policy_name = optional(string, "factory")
+    data_dir              = optional(string, "data")
+    dns_policy_rules_file = optional(string, "data/dns-policy-rules.yaml")
+    firewall_policy_name  = optional(string, "factory")
   })
   default = {
     data_dir = "data"
@@ -128,24 +153,7 @@ variable "psa_ranges" {
       })
     })
   })
-  default = {
-    dev = {
-      ranges = {
-        cloudsql-mysql      = "10.128.62.0/24"
-        cloudsql-sqlserver  = "10.128.63.0/24"
-        cloudsql-postgresql = "10.128.64.0/24"
-      }
-      routes = null
-    }
-    prod = {
-      ranges = {
-        cloudsql-mysql      = "10.128.94.0/24"
-        cloudsql-sqlserver  = "10.128.95.0/24"
-        cloudsql-postgresql = "10.128.96.0/24"
-      }
-      routes = null
-    }
-  }
+  default = null
 }
 
 variable "regions" {
@@ -155,8 +163,8 @@ variable "regions" {
     secondary = string
   })
   default = {
-    primary   = "northamerica-northeast1"
-    secondary = "northamerica-northeast2"
+    primary   = "europe-west1"
+    secondary = "europe-west4"
   }
 }
 
