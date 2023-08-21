@@ -17,7 +17,7 @@
 # tfdoc:file:description Landing VPC and related resources.
 
 module "landing-project" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v24.0.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v25.0.0"
   billing_account = var.billing_account.id
   name            = "prod-net-landing-0"
   parent          = var.folder_ids.networking-prod
@@ -44,7 +44,7 @@ module "landing-project" {
 }
 
 module "landing-vpc" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v24.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v25.0.0"
   project_id = module.landing-project.project_id
   name       = "prod-landing-0"
   mtu        = 1500
@@ -60,7 +60,7 @@ module "landing-vpc" {
 }
 
 module "landing-firewall" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v24.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v25.0.0"
   project_id = module.landing-project.project_id
   network    = module.landing-vpc.name
   default_rules_config = {
@@ -78,12 +78,11 @@ moved {
 }
 
 module "landing-nat-primary" {
-  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v24.0.0"
+  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v25.0.0"
   project_id     = module.landing-project.project_id
   region         = var.regions.primary
   name           = local.region_shortnames[var.regions.primary]
   router_create  = true
   router_name    = "prod-nat-${local.region_shortnames[var.regions.primary]}"
   router_network = module.landing-vpc.name
-  router_asn     = 4200001024
 }

@@ -17,7 +17,7 @@
 # tfdoc:file:description Production spoke VPC and related resources.
 
 module "prod-spoke-project" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v24.0.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v25.0.0"
   billing_account = var.billing_account.id
   name            = "prod-net-spoke-0"
   parent          = var.folder_ids.networking-prod
@@ -45,7 +45,7 @@ module "prod-spoke-project" {
 }
 
 module "prod-spoke-vpc" {
-  source      = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v24.0.0"
+  source      = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v25.0.0"
   project_id  = module.prod-spoke-project.project_id
   name        = "prod-spoke-0"
   mtu         = 1500
@@ -59,7 +59,7 @@ module "prod-spoke-vpc" {
 }
 
 module "prod-spoke-firewall" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v24.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v25.0.0"
   project_id = module.prod-spoke-project.project_id
   network    = module.prod-spoke-vpc.name
   default_rules_config = {
@@ -73,13 +73,12 @@ module "prod-spoke-firewall" {
 
 module "prod-spoke-cloudnat" {
   for_each       = toset(values(module.prod-spoke-vpc.subnet_regions))
-  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v24.0.0"
+  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v25.0.0"
   project_id     = module.prod-spoke-project.project_id
   region         = each.value
   name           = "prod-nat-${local.region_shortnames[each.value]}"
   router_create  = true
   router_network = module.prod-spoke-vpc.name
-  router_asn     = 4200001024
   logging_filter = "ERRORS_ONLY"
 }
 
