@@ -28,7 +28,7 @@ locals {
 }
 
 module "dev-spoke-vpc-serverless" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v24.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v25.0.0"
   project_id = module.dev-spoke-project.project_id
   name       = module.dev-spoke-vpc.name
   vpc_create = false
@@ -43,7 +43,7 @@ module "dev-spoke-vpc-serverless" {
 }
 
 module "prod-spoke-vpc-serverless" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v24.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v25.0.0"
   project_id = module.prod-spoke-project.project_id
   name       = module.prod-spoke-vpc.name
   vpc_create = false

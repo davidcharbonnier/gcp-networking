@@ -24,13 +24,16 @@ moved {
 }
 
 #module "landing-dns-fwd-onprem-example" {
-#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v24.0.0"
-#  project_id      = module.landing-project.project_id
-#  type            = "forwarding"
-#  name            = "example-com"
-#  domain          = "onprem.example.com."
-#  client_networks = [module.landing-vpc.self_link]
-#  forwarders      = { for ip in var.dns.onprem : ip => null }
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v25.0.0"
+#  project_id = module.landing-project.project_id
+#  name       = "example-com"
+#  zone_config = {
+#    domain = "onprem.example.com."
+#    forwarding = {
+#      client_networks = [module.landing-vpc.self_link]
+#      forwarders      = { for ip in var.dns.onprem : ip => null }
+#    }
+#  }
 #}
 
 moved {
@@ -39,13 +42,16 @@ moved {
 }
 
 #module "landing-dns-fwd-onprem-rev-10" {
-#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v24.0.0"
-#  project_id      = module.landing-project.project_id
-#  type            = "forwarding"
-#  name            = "root-reverse-10"
-#  domain          = "10.in-addr.arpa."
-#  client_networks = [module.landing-vpc.self_link]
-#  forwarders      = { for ip in var.dns.onprem : ip => null }
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v25.0.0"
+#  project_id = module.landing-project.project_id
+#  name       = "root-reverse-10"
+#  zone_config = {
+#    domain = "10.in-addr.arpa."
+#    forwarding = {
+#      client_networks = [module.landing-vpc.self_link]
+#      forwarders      = { for ip in var.dns.onprem : ip => null }
+#    }
+#  }
 #}
 
 moved {
@@ -54,12 +60,15 @@ moved {
 }
 
 #module "landing-dns-priv-gcp" {
-#  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v24.0.0"
-#  project_id      = module.landing-project.project_id
-#  type            = "private"
-#  name            = "gcp-example-com"
-#  domain          = "gcp.example.com."
-#  client_networks = [module.landing-vpc.self_link]
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v25.0.0"
+#  project_id = module.landing-project.project_id
+#  name       = "gcp-example-com"
+#  zone_config = {
+#    domain = "gcp.example.com."
+#    private = {
+#      client_networks = [module.landing-vpc.self_link]
+#    }
+#  }
 #  recordsets = {
 #    "A localhost" = { records = ["127.0.0.1"] }
 #  }
@@ -68,7 +77,7 @@ moved {
 # Google APIs via response policies
 
 module "landing-dns-policy-googleapis" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns-response-policy?ref=v24.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns-response-policy?ref=v25.0.0"
   project_id = module.landing-project.project_id
   name       = "googleapis"
   networks = {
@@ -80,12 +89,17 @@ module "landing-dns-policy-googleapis" {
 # davidcharbonnier.fr public zone
 
 module "davidcharbonnier-dns-public-zone" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v24.0.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v25.0.0"
   project_id      = module.landing-project.project_id
-  type            = "public"
   name            = "davidcharbonnier-fr"
-  domain          = "davidcharbonnier.fr."
-  client_networks = [module.landing-vpc.self_link]
+  zone_config = {
+    domain = "davidcharbonnier.fr."
+    public = {
+      dnssec_config = {
+        state = "on"
+      }
+    }
+  }
   recordsets = {
     # Gmail
     "MX "                   = { ttl = 3600, records = ["5 alt2.aspmx.l.google.com.", "10 alt4.aspmx.l.google.com.", "10 alt3.aspmx.l.google.com.", "5 alt1.aspmx.l.google.com.", "1 aspmx.l.google.com."] }
@@ -98,8 +112,5 @@ module "davidcharbonnier-dns-public-zone" {
     "CAA " = { ttl = 0, records = ["0 iodef \"mailto:contact@davidcharbonnier.fr\"", "0 issue \"letsencrypt.org\""] }
     # Google Workspace
     "TXT " = { ttl = 0, records = ["google-site-verification=ufzEd-TjmFzEHsejF-PB0PIVwwlCTFiqP7JOyVx4u9s"] }
-  }
-  dnssec_config = {
-    state = "on"
   }
 }
