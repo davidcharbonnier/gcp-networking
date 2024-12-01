@@ -24,7 +24,7 @@ moved {
 }
 
 #module "prod-dns-priv-example" {
-#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v25.0.0"
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v26.0.0"
 #  project_id = module.prod-spoke-project.project_id
 #  name       = "prod-gcp-example-com"
 #  zone_config = {
@@ -46,7 +46,7 @@ moved {
 }
 
 module "prod-dns-peer-landing-root" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v25.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v26.0.0"
   project_id = module.prod-spoke-project.project_id
   name       = "prod-root-dns-peering"
   zone_config = {
@@ -64,7 +64,7 @@ moved {
 }
 
 #module "prod-dns-peer-landing-rev-10" {
-#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v25.0.0"
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v26.0.0"
 #  project_id = module.prod-spoke-project.project_id
 #  name       = "prod-reverse-10-dns-peering"
 #  zone_config = {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Google LLC
+ * Copyright 2023 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,19 +40,20 @@ locals {
 }
 
 module "folder" {
-  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder?ref=v25.0.0"
+  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder?ref=v26.0.0"
   parent        = "organizations/${var.organization.id}"
   name          = "Networking"
   folder_create = var.folder_ids.networking == null
   id            = var.folder_ids.networking
-  firewall_policy_associations = {
-    default = module.firewall-policy-default.id
+  firewall_policy = {
+    name   = "default"
+    policy = module.firewall-policy-default.id
   }
 }
 
 module "firewall-policy-default" {
-  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v25.0.0"
-  name      = "net-default"
+  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v26.0.0"
+  name      = var.factories_config.firewall_policy_name
   parent_id = module.folder.id
   rules_factory_config = {
     cidr_file_path          = "${var.factories_config.data_dir}/cidrs.yaml"

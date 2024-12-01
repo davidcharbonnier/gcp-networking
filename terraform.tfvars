@@ -7,7 +7,6 @@ psa_ranges = {
       cloudsql-sqlserver  = "10.128.63.0/24"
       cloudsql-postgresql = "10.128.64.0/24"
     }
-    routes = null
   }
   prod = {
     ranges = {
@@ -15,7 +14,6 @@ psa_ranges = {
       cloudsql-sqlserver  = "10.128.95.0/24"
       cloudsql-postgresql = "10.128.96.0/24"
     }
-    routes = null
   }
 }
 
