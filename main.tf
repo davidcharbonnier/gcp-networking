@@ -40,7 +40,7 @@ locals {
 }
 
 module "folder" {
-  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder?ref=v26.0.0"
+  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder?ref=v27.0.0"
   parent        = "organizations/${var.organization.id}"
   name          = "Networking"
   folder_create = var.folder_ids.networking == null
@@ -52,7 +52,7 @@ module "folder" {
 }
 
 module "firewall-policy-default" {
-  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v26.0.0"
+  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v27.0.0"
   name      = var.factories_config.firewall_policy_name
   parent_id = module.folder.id
   rules_factory_config = {

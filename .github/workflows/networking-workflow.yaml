@@ -31,7 +31,7 @@ env:
   TF_PROVIDERS_FILE: 2-networking-providers.tf
   TF_VAR_FILES: 0-bootstrap.auto.tfvars.json
     1-resman.auto.tfvars.json
-    globals.auto.tfvars.json
+    0-globals.auto.tfvars.json
   TF_VERSION: 1.4.4
 
 jobs:

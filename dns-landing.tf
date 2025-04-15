@@ -77,7 +77,7 @@ moved {
 # Google APIs via response policies
 
 module "landing-dns-policy-googleapis" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns-response-policy?ref=v26.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns-response-policy?ref=v27.0.0"
   project_id = module.landing-project.project_id
   name       = "googleapis"
   networks = {
