@@ -46,7 +46,7 @@ moved {
 }
 
 module "dev-dns-peer-landing-root" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v27.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v28.0.0"
   project_id = module.dev-spoke-project.project_id
   name       = "dev-root-dns-peering"
   zone_config = {

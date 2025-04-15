@@ -17,7 +17,7 @@
 # tfdoc:file:description Production spoke VPC and related resources.
 
 module "prod-spoke-project" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v27.0.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v28.0.0"
   billing_account = var.billing_account.id
   name            = "prod-net-spoke-0"
   parent          = var.folder_ids.networking-prod
@@ -42,10 +42,29 @@ module "prod-spoke-project" {
       try(local.service_accounts.project-factory-prod, null),
     ])
   }
+  # allow specific service accounts to assign a set of roles
+  iam_bindings = {
+    sa_delegated_grants = {
+      role = "roles/resourcemanager.projectIamAdmin"
+      members = compact([
+        try(local.service_accounts.data-platform-prod, null),
+        try(local.service_accounts.project-factory-prod, null),
+        try(local.service_accounts.gke-prod, null),
+      ])
+      condition = {
+        title       = "prod_stage3_sa_delegated_grants"
+        description = "Production host project delegated grants."
+        expression = format(
+          "api.getAttribute('iam.googleapis.com/modifiedGrantsByRole', []).hasOnly([%s])",
+          join(",", formatlist("'%s'", local.stage3_sas_delegated_grants))
+        )
+      }
+    }
+  }
 }
 
 module "prod-spoke-vpc" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v27.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v28.0.0"
   project_id = module.prod-spoke-project.project_id
   name       = "prod-spoke-0"
   mtu        = 1500
@@ -61,7 +80,7 @@ module "prod-spoke-vpc" {
 }
 
 module "prod-spoke-firewall" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v27.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v28.0.0"
   project_id = module.prod-spoke-project.project_id
   network    = module.prod-spoke-vpc.name
   default_rules_config = {
@@ -75,30 +94,11 @@ module "prod-spoke-firewall" {
 
 module "prod-spoke-cloudnat" {
   for_each       = toset(values(module.prod-spoke-vpc.subnet_regions))
-  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v27.0.0"
+  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v28.0.0"
   project_id     = module.prod-spoke-project.project_id
   region         = each.value
   name           = "prod-nat-${local.region_shortnames[each.value]}"
   router_create  = true
   router_network = module.prod-spoke-vpc.name
   logging_filter = "ERRORS_ONLY"
-}
-
-# Create delegated grants for stage3 service accounts
-resource "google_project_iam_binding" "prod_spoke_project_iam_delegated" {
-  project = module.prod-spoke-project.project_id
-  role    = "roles/resourcemanager.projectIamAdmin"
-  members = compact([
-    try(local.service_accounts.data-platform-prod, null),
-    try(local.service_accounts.project-factory-prod, null),
-    try(local.service_accounts.gke-prod, null),
-  ])
-  condition {
-    title       = "prod_stage3_sa_delegated_grants"
-    description = "Production host project delegated grants."
-    expression = format(
-      "api.getAttribute('iam.googleapis.com/modifiedGrantsByRole', []).hasOnly([%s])",
-      join(",", formatlist("'%s'", local.stage3_sas_delegated_grants))
-    )
-  }
 }

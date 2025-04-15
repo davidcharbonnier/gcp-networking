@@ -17,7 +17,7 @@
 # tfdoc:file:description Dev spoke VPC and related resources.
 
 module "dev-spoke-project" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v27.0.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v28.0.0"
   billing_account = var.billing_account.id
   name            = "dev-net-spoke-0"
   parent          = var.folder_ids.networking-dev
@@ -39,13 +39,32 @@ module "dev-spoke-project" {
   iam = {
     "roles/dns.admin" = compact([
       try(local.service_accounts.gke-dev, null),
-      try(local.service_accounts.project-factory-dev, null)
+      try(local.service_accounts.project-factory-dev, null),
     ])
+  }
+  # allow specific service accounts to assign a set of roles
+  iam_bindings = {
+    sa_delegated_grants = {
+      role = "roles/resourcemanager.projectIamAdmin"
+      members = compact([
+        try(local.service_accounts.data-platform-dev, null),
+        try(local.service_accounts.project-factory-dev, null),
+        try(local.service_accounts.gke-dev, null),
+      ])
+      condition = {
+        title       = "dev_stage3_sa_delegated_grants"
+        description = "Development host project delegated grants."
+        expression = format(
+          "api.getAttribute('iam.googleapis.com/modifiedGrantsByRole', []).hasOnly([%s])",
+          join(",", formatlist("'%s'", local.stage3_sas_delegated_grants))
+        )
+      }
+    }
   }
 }
 
 module "dev-spoke-vpc" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v27.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v28.0.0"
   project_id = module.dev-spoke-project.project_id
   name       = "dev-spoke-0"
   mtu        = 1500
@@ -61,7 +80,7 @@ module "dev-spoke-vpc" {
 }
 
 module "dev-spoke-firewall" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v27.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v28.0.0"
   project_id = module.dev-spoke-project.project_id
   network    = module.dev-spoke-vpc.name
   default_rules_config = {
@@ -75,30 +94,11 @@ module "dev-spoke-firewall" {
 
 module "dev-spoke-cloudnat" {
   for_each       = toset(values(module.dev-spoke-vpc.subnet_regions))
-  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v27.0.0"
+  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v28.0.0"
   project_id     = module.dev-spoke-project.project_id
   region         = each.value
   name           = "dev-nat-${local.region_shortnames[each.value]}"
   router_create  = true
   router_network = module.dev-spoke-vpc.name
   logging_filter = "ERRORS_ONLY"
-}
-
-# Create delegated grants for stage3 service accounts
-resource "google_project_iam_binding" "dev_spoke_project_iam_delegated" {
-  project = module.dev-spoke-project.project_id
-  role    = "roles/resourcemanager.projectIamAdmin"
-  members = compact([
-    try(local.service_accounts.data-platform-dev, null),
-    try(local.service_accounts.project-factory-dev, null),
-    try(local.service_accounts.gke-dev, null),
-  ])
-  condition {
-    title       = "dev_stage3_sa_delegated_grants"
-    description = "Development host project delegated grants."
-    expression = format(
-      "api.getAttribute('iam.googleapis.com/modifiedGrantsByRole', []).hasOnly([%s])",
-      join(",", formatlist("'%s'", local.stage3_sas_delegated_grants))
-    )
-  }
 }
