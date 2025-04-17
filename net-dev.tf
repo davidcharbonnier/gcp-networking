@@ -1,5 +1,5 @@
 /**
- * Copyright 2023 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 # tfdoc:file:description Dev spoke VPC and related resources.
 
 module "dev-spoke-project" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v29.0.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v30.0.0"
   billing_account = var.billing_account.id
   name            = "dev-net-spoke-0"
   parent          = var.folder_ids.networking-dev
@@ -64,10 +64,13 @@ module "dev-spoke-project" {
 }
 
 module "dev-spoke-vpc" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v29.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v30.0.0"
   project_id = module.dev-spoke-project.project_id
   name       = "dev-spoke-0"
   mtu        = 1500
+  dns_policy = {
+    logging = var.dns.enable_logging
+  }
   factories_config = {
     subnets_folder = "${var.factories_config.data_dir}/subnets/dev"
   }
@@ -80,7 +83,7 @@ module "dev-spoke-vpc" {
 }
 
 module "dev-spoke-firewall" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v29.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v30.0.0"
   project_id = module.dev-spoke-project.project_id
   network    = module.dev-spoke-vpc.name
   default_rules_config = {
@@ -93,8 +96,8 @@ module "dev-spoke-firewall" {
 }
 
 module "dev-spoke-cloudnat" {
-  for_each       = toset(values(module.dev-spoke-vpc.subnet_regions))
-  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v29.0.0"
+  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v30.0.0"
+  for_each       = toset(var.enable_cloud_nat ? values(module.dev-spoke-vpc.subnet_regions) : [])
   project_id     = module.dev-spoke-project.project_id
   region         = each.value
   name           = "dev-nat-${local.region_shortnames[each.value]}"

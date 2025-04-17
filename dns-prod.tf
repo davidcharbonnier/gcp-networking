@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,13 +18,8 @@
 
 # GCP-specific environment zone
 
-moved {
-  from = module.prod-dns-private-zone
-  to   = module.prod-dns-priv-example
-}
-
 #module "prod-dns-priv-example" {
-#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v26.0.0"
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v30.0.0"
 #  project_id = module.prod-spoke-project.project_id
 #  name       = "prod-gcp-example-com"
 #  zone_config = {
@@ -40,13 +35,8 @@ moved {
 
 # root zone peering to landing to centralize configuration; remove if unneeded
 
-moved {
-  from = module.prod-landing-root-dns-peering
-  to   = module.prod-dns-peer-landing-root
-}
-
 module "prod-dns-peer-landing-root" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v29.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v30.0.0"
   project_id = module.prod-spoke-project.project_id
   name       = "prod-root-dns-peering"
   zone_config = {
@@ -58,13 +48,8 @@ module "prod-dns-peer-landing-root" {
   }
 }
 
-moved {
-  from = module.prod-reverse-10-dns-peering
-  to   = module.prod-dns-peer-landing-rev-10
-}
-
 #module "prod-dns-peer-landing-rev-10" {
-#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v26.0.0"
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v30.0.0"
 #  project_id = module.prod-spoke-project.project_id
 #  name       = "prod-reverse-10-dns-peering"
 #  zone_config = {
