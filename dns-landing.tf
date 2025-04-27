@@ -98,7 +98,7 @@ module "davidcharbonnier-dns-public-zone" {
     "A "        = { ttl = 0, records = ["75.2.60.5"] }
     "CNAME www" = { ttl = 0, records = ["davidcharbonnier.netlify.app."] }
     # Letencrypt
-    "CAA " = { ttl = 0, records = ["0 iodef \"mailto:contact@davidcharbonnier.fr\"", "0 issue \"letsencrypt.org\""] }
+    "CAA " = { ttl = 0, records = ["0 iodef \"mailto:contact@davidcharbonnier.fr\"", "0 issue \"letsencrypt.org\"", "0 issue \"pki.goog\""] }
     # Google Workspace
     "TXT " = { ttl = 0, records = ["google-site-verification=ufzEd-TjmFzEHsejF-PB0PIVwwlCTFiqP7JOyVx4u9s"] }
   }
