@@ -1,4 +1,4 @@
-# Networking with VPC Peering
+# Networking with "simple" hub and spoke
 
 This stage sets up the shared network infrastructure for the whole organization. It adopts the common “hub and spoke” reference design, which is well suited to multiple scenarios, and offers several advantages versus other designs:
 
@@ -7,47 +7,71 @@ This stage sets up the shared network infrastructure for the whole organization.
 - Shared VPC in both hub and spokes splits management of network resources in specific (host) projects, while still allowing them to be consumed from workload (service) projects
 - the design also lends itself to easy DNS centralization, both from on-prem to cloud and from cloud to on-prem
 
-Connectivity between hub and spokes is established here via [VPC Peering](https://cloud.google.com/vpc/docs/vpc-peering), which offers a complete isolation between environments, and no choke-points in the data plane. Different ways of implementing connectivity, and their respective pros and cons, are discussed below.
+Connectivity between hub and spokes is configurable, and can be established via one of either
 
-The following diagram illustrates the high-level design, and should be used as a reference for the following sections. The final number of subnets, and their IP addressing design will of course depend on customer-specific requirements, and can be easily changed via variables or external data files without having to edit the actual code.
+- [VPC Peering](https://cloud.google.com/vpc/docs/vpc-peering) (enabled by default),  which offers a complete isolation between environments, and no choke-points in the data plane. Different ways of implementing connectivity, and their respective pros and cons, are discussed below.
+- [HA VPN](https://cloud.google.com/network-connectivity/docs/vpn/concepts/topologies) tunnels, which offer easy interoperability with some key GCP features (GKE, services leveraging Service Networking like Cloud SQL, etc.), allowing clear partitioning of quota and limits between environments, and fine-grained control of routing
+
+The following diagrams illustrate the high-level designs for the VPN and for the Peering configuration, and should be used as a reference for the following sections. The final number of subnets, and their IP addressing design will of course depend on customer-specific requirements, and can be easily changed via variables or external data files without having to edit the actual code.
 
 <p align="center">
-  <img src="diagram.svg" alt="Networking diagram">
+  <img src="diagram-vpn.svg" alt="HA-VPN diagram">
+  </br>HA-VPN diagram
+</p>
+<hr/>
+<p align="center">
+  <img src="diagram-peering.svg" alt="Peering diagram">
+  </br>Peering diagram
 </p>
 
 ## Table of contents
 
+<!-- BEGIN TOC -->
+- [Table of contents](#table-of-contents)
 - [Design overview and choices](#design-overview-and-choices)
   - [VPC design](#vpc-design)
   - [External connectivity](#external-connectivity)
   - [Internal connectivity](#internal-connectivity)
   - [IP ranges, subnetting, routing](#ip-ranges-subnetting-routing)
+    - [Peering specific routing setup](#peering-specific-routing-setup)
+    - [HA VPN specific routing setup](#ha-vpn-specific-routing-setup)
   - [Internet egress](#internet-egress)
   - [VPC and Hierarchical Firewall](#vpc-and-hierarchical-firewall)
   - [DNS](#dns)
 - [Stage structure and files layout](#stage-structure-and-files-layout)
   - [VPCs](#vpcs)
   - [VPNs](#vpns)
+    - [External](#external)
+    - [Internal](#internal)
   - [Routing and BGP](#routing-and-bgp)
   - [Firewall](#firewall)
   - [DNS architecture](#dns-architecture)
-  - [Private Google Access](#private-google-access)
+    - [Cloud environment](#cloud-environment)
+    - [Cloud to on-prem](#cloud-to-on-prem)
+    - [On-prem to cloud](#on-prem-to-cloud)
 - [How to run this stage](#how-to-run-this-stage)
   - [Provider and Terraform variables](#provider-and-terraform-variables)
   - [Impersonating the automation service account](#impersonating-the-automation-service-account)
   - [Variable configuration](#variable-configuration)
+  - [Choosing between peering and VPN](#choosing-between-peering-and-vpn)
+  - [Using delayed billing association for projects](#using-delayed-billing-association-for-projects)
   - [Running the stage](#running-the-stage)
   - [Post-deployment activities](#post-deployment-activities)
+    - [Private Google Access](#private-google-access)
 - [Customizations](#customizations)
   - [Changing default regions](#changing-default-regions)
   - [Configuring the VPN to on prem](#configuring-the-vpn-to-on-prem)
   - [Adding an environment](#adding-an-environment)
+- [Files](#files)
+- [Variables](#variables)
+- [Outputs](#outputs)
+<!-- END TOC -->
 
 ## Design overview and choices
 
 ### VPC design
 
-The hub/landing VPC hosts external connectivity and shared services for spoke VPCs, which are connected to it via VPC peering. Spokes are used here to partition environments, which is a fairly common pattern:
+The hub/landing VPC hosts external connectivity and shared services for spoke VPCs, which are connected to it via either VPC Peerings (by default) or HA VPN tunnels. Spokes are used here to partition environments, which is a fairly common pattern:
 
 - one spoke VPC for the production environment
 - one spoke VPC for the development environment
@@ -66,19 +90,17 @@ Connectivity to additional on-prem sites or other cloud providers should be impl
 
 ### Internal connectivity
 
-Each environment has full line of sight with the Landing VPC, and hence with any networks interconnected with it (e.g. your onprem environment). Environments cannot communicate with each other (prod to dev and viceversa). If this is a requirement, and according to your specific needs and constraints, solutions based on full-mesh peerings, VPNs or NVA should be added to this design.
-
-As mentioned initially, there are of course other ways to implement internal connectivity other than VPC peering. These can be easily retrofitted with minimal code changes, but introduce additional considerations for service interoperability, quotas and management.
+As mentioned initially, there are of course other ways to implement internal connectivity other than HA VPN. These can be easily retrofitted with minimal code changes, but introduce additional considerations for service interoperability, quotas and management.
 
 This is a summary of the main options:
 
-- [HA VPN](https://cloud.google.com/network-connectivity/docs/vpn/concepts/topologies) (implemented by [2-networking-b-vpn](../2-networking-b-vpn/))
+- [Peering](https://cloud.google.com/vpc/docs/vpc-peering)
+  - Pros: no additional costs, full bandwidth with no configurations, no extra latency
+  - Cons: no transitivity (e.g. to GKE masters, Cloud SQL, etc.), no selective exchange of routes, several quotas and limits shared between VPCs in a peering group
+- [HA VPN](https://cloud.google.com/network-connectivity/docs/vpn/concepts/topologies) (implemented here)
   - Pros: simple compatibility with GCP services that leverage peering internally, better control on routes, avoids peering groups shared quotas and limits
   - Cons: additional cost, marginal increase in latency, requires multiple tunnels for full bandwidth
-- [VPC Peering](https://cloud.google.com/vpc/docs/vpc-peering) (implemented here)
-  - Pros: no additional costs, full bandwidth with no configurations, no extra latency, total environment isolation
-  - Cons: no transitivity (e.g. to GKE masters, Cloud SQL, etc.), no selective exchange of routes, several quotas and limits shared between VPCs in a peering group
-- [Multi-NIC appliances](https://cloud.google.com/architecture/best-practices-vpc-design#multi-nic) (implemented by [2-networking-c-nva](../2-networking-c-nva/) and [2-networking-e-nva-bgp](../2-networking-e-nva-bgp/))
+- [Multi-NIC appliances](https://cloud.google.com/architecture/best-practices-vpc-design#multi-nic) (implemented by [2-networking-b-nva](../2-networking-b-nva/)
   - Pros: additional security features (e.g. IPS), potentially better integration with on-prem systems by using the same vendor
   - Cons: complex HA/failover setup, limited by VM bandwidth and scale, additional costs for VMs and licenses, out of band management of a critical cloud component
 
@@ -92,12 +114,31 @@ Spoke VPCs also define and reserve two "special" CIDR ranges dedicated to [PSA (
 
 Routes in GCP are either automatically created for VPC subnets, manually created via static routes, or dynamically programmed by [Cloud Routers](https://cloud.google.com/network-connectivity/docs/router#docs) via BGP sessions, which can be configured to advertise VPC ranges, and/or custom ranges via custom advertisements.
 
-In this setup:
+#### Peering specific routing setup
+
+When the peering configuration is enabled:
 
 - routes between multiple subnets within the same VPC are automatically programmed by GCP
 - each spoke exchanges routes with the hub/landing through VPC peering
 - spokes don't exchange routes, directly or indirectly
 - on-premises is connected to the landing VPC and dynamically exchanges BGP routes with GCP using HA VPN
+
+#### HA VPN specific routing setup
+
+In this setup, the Cloud Routers are configured so as to exclude the default advertisement of VPC ranges, and they only advertise their respective aggregate ranges via custom advertisements. This greatly simplifies the routing configuration, and more importantly it allows to avoid quota or limit issues by keeping the number of routes small, instead of making it proportional to the subnets and secondary ranges in the VPCs.
+
+The high-level routing plan implemented in this architecture is as follows:
+
+| source      | target      | advertisement                  |
+| ----------- | ----------- | ------------------------------ |
+| VPC landing | onprem      | GCP aggregate                  |
+| VPC landing | onprem      | Cloud DNS forwarders           |
+| VPC landing | onprem      | Google private/restricted APIs |
+| VPC landing | spokes      | RFC1918                        |
+| VPC spoke   | VPC landing | spoke aggregate                |
+| onprem      | VC landing  | onprem aggregates              |
+
+As is evident from the table above, the hub/landing VPC acts as the route concentrator for the whole GCP network, implementing a full line of sight between environments, and between GCP and on-prem. While advertisements can be adjusted to selectively exchange routes (e.g. to isolate the production and the development environment), we recommend using [Firewall](#firewall) policies or rules to achieve the desired isolation.
 
 ### Internet egress
 
@@ -147,7 +188,6 @@ This configuration is battle-tested, and flexible enough to lend itself to simpl
 ### VPCs
 
 VPCs are defined in separate files, one for `landing` and one for each of `prod` and `dev`.
-
 These files contain different resources:
 
 - **project** ([`projects`](../../../modules/project)): the "[host projects](https://cloud.google.com/vpc/docs/shared-vpc)" containing the VPCs and enabling the required APIs.
@@ -156,13 +196,23 @@ These files contain different resources:
 
 ### VPNs
 
+#### External
+
 Connectivity to on-prem is implemented with HA VPN ([`net-vpn`](../../../modules/net-vpn-ha)) and defined in [`vpn-onprem.tf`](./vpn-onprem.tf). The file provisionally implements a single logical connection between onprem and landing at `europe-west1`, and the relevant parameters for its configuration are found in variable `vpn_onprem_primary_configs`. An example configuration is provided [below](#configuring-the-vpn-to-on-prem).
+
+#### Internal
+
+Internal connectivity is controlled by `var.spoke_configs`, where you can either configure `peering-configs` or `vpn-configs` based on which spoke connectivity method you want to deploy. By default, an empty configuration will deploy a VPC Peering based hub-and-spoke.
+
+Peerings are managed by `spoke-peerings.tf`, and VPNs ([`net-vpn`](../../../modules/net-vpn-ha)) are managed by the `spoke-vpns.tf` file. In case of VPNs, per-gateway configurations (e.g. BGP advertisements and session ranges) are controlled by variable `var.spoke_configs.vpn_configs`. VPN gateways and IKE secrets are automatically generated and configured.
 
 ### Routing and BGP
 
-Each VPC network ([`net-vpc`](../../../modules/net-vpc)) manages a separate routing table, which can define static routes (e.g. to private.googleapis.com) and receives dynamic routes from BGP sessions established with neighbor networks (i.e. landing receives routes from onprem and any other interconnected network). Spokes receive dynamic routes programmed on the Landing VPC from the VPC peering.
+Each VPC network ([`net-vpc`](../../../modules/net-vpc)) manages a separate routing table, which can define static routes (e.g. to private.googleapis.com) and receives dynamic routes from BGP sessions established with neighbor networks (e.g. landing receives routes from onprem and spokes, and spokes receive RFC1918 from landing).
 
-Static routes are defined in `vpc-*.tf` files, in the `routes` section of each `net-vpc` module.
+Static routes are defined in `net-*.tf` files, in the `routes` section of each `net-vpc` module.
+
+BGP sessions for landing-spoke are configured through variable `spoke_configs.vpn_configs`, while the ones for landing-onprem use variable `vpn_onprem_configs`
 
 ### Firewall
 
@@ -209,7 +259,7 @@ The commands to link or copy the provider and terraform variable files can be ea
 ```bash
 ../../stage-links.sh ~/fast-config
 
-# copy and paste the following commands for '2-networking-a-peering'
+# copy and paste the following commands for '2-networking-*'
 
 ln -s ~/fast-config/providers/2-networking-providers.tf ./
 ln -s ~/fast-config/tfvars/0-globals.auto.tfvars.json ./
@@ -220,7 +270,7 @@ ln -s ~/fast-config/tfvars/1-resman.auto.tfvars.json ./
 ```bash
 ../../stage-links.sh gs://xxx-prod-iac-core-outputs-0
 
-# copy and paste the following commands for '2-networking-a-peering'
+# copy and paste the following commands for '2-networking-*'
 
 gcloud alpha storage cp gs://xxx-prod-iac-core-outputs-0/providers/2-networking-providers.tf ./
 gcloud alpha storage cp gs://xxx-prod-iac-core-outputs-0/tfvars/0-globals.auto.tfvars.json ./
@@ -248,6 +298,14 @@ Note that the `outputs_location` variable is disabled by default, you need to ex
 outputs_location = "~/fast-config"
 ```
 
+### Choosing between peering and VPN
+
+An empty configuration of `var.spoke_configs` will result in peerings to be used as a connection method between the hub and spokes. To switch to VPN without customising anything else, you can populate the `var.spoke_configs` variable as follows:
+
+```tfvars
+spoke_configs = { vpn_configs = {} }
+```
+
 ### Using delayed billing association for projects
 
 This configuration is possible but unsupported and only exists for development purposes, use at your own risk:
@@ -258,7 +316,7 @@ This configuration is possible but unsupported and only exists for development p
     `terraform apply -target 'module.landing-project.google_project.project[0]'`
   - untaint the project resource after applying, for example
     `terraform untaint 'module.landing-project.google_project.project[0]'`
-- go through the process to associate the billing account with the two projects
+- go through the process to associate the billing account with the three projects
 - switch `billing_account.id` back to the real billing account id
 - resume applying normally
 
@@ -353,12 +411,20 @@ Create a `net-staging.tf` file by copying `net-prod.tf` file,
 and adapt the new file by replacing the value "prod" with the value "staging".
 Running `diff net-dev.tf net-prod.tf` can help to see how environment files differ.
 
-The new VPC requires a set of dedicated CIDRs, one per region, added to variable `custom_adv` (for example as `spoke_staging_primary` and `spoke_staging_secondary`).
+The new VPC requires a set of dedicated CIDRs, one per region, added to variable `custom_adv` (for example as `spoke_staging_ew1` and `spoke_staging_ew4`).
 >`custom_adv` is a map that "resolves" CIDR names to actual addresses, and will be used later to configure routing.
 >
-Variables managing L7 Internal Load Balancers (`l7ilb_subnets`) and Private Service Access (`psa_ranges`) should also be adapted, and subnets and firewall rules for the new spoke should be added as described above.
+Variables managing L7 Internal Load Balancers (`l7ilb_subnets`) and Private Service Access (`psa_ranges`) should also be adapted, also subnets and firewall rules for the new spoke should be added as described above.
 
-DNS configurations are centralised in the `dns-*.tf` files. Spokes delegate DNS resolution to Landing through DNS peering, and optionally define a private zone (e.g. `dev.gcp.example.com`) which the landing peers to. To configure DNS for a new environment, copy one of the other environments DNS files [e.g. (dns-dev.tf](dns-dev.tf)) into a new `dns-*.tf` file suffixed with the environment name (e.g. `dns-staging.tf`), and update its content accordingly. Don't forget to add a peering zone from the landing to the newly created environment private zone.
+Spokes connectivity is managed by `spoke-peerings.tf` for peerings, and `spoke-vpns.tf` for VPNs. Adapt them to ensure that the newly created spokes are connected to landing.
+
+VPN configuration also controls BGP advertisements, which requires the following variable changes:
+
+- `router_configs` to configure the new routers (one per region) created for the `staging` VPC
+- `vpn_onprem_configs` to configure the new advertisements to on-premises for the new CIDRs
+- `spoke_configs.vpn_configs` to configure the new advertisements to `landing` for the new VPC - new keys (one per region) should be added, such as e.g. `staging-ew1` and `staging-ew4`
+
+DNS configurations are centralised in the `dns-*.tf` files. Spokes delegate DNS resolution to Landing through DNS peering, and optionally define a private zone (e.g. `dev.gcp.example.com`) which the landing peers to. To configure DNS for a new environment, copy one of the other environments DNS files [e.g. (dns-dev.tf)](dns-dev.tf) into a new `dns-*.tf` file suffixed with the environment name (e.g. `dns-staging.tf`), and update its content accordingly. Don't forget to add a peering zone from the landing to the newly created environment private zone.
 
 <!-- TFDOC OPTS files:1 show_extra:1 -->
 <!-- BEGIN TFDOC -->
@@ -370,16 +436,17 @@ DNS configurations are centralised in the `dns-*.tf` files. Spokes delegate DNS 
 | [dns-landing.tf](./dns-landing.tf) | Landing DNS zones and peerings setup. | <code>dns</code> · <code>dns-response-policy</code> |  |
 | [dns-prod.tf](./dns-prod.tf) | Production spoke DNS zones and peerings setup. | <code>dns</code> |  |
 | [main.tf](./main.tf) | Networking folder and hierarchical policy. | <code>folder</code> · <code>net-firewall-policy</code> |  |
-| [monitoring-vpn-onprem.tf](./monitoring-vpn-onprem.tf) | VPN monitoring alerts. |  | <code>google_monitoring_alert_policy</code> |
+| [monitoring-vpn.tf](./monitoring-vpn.tf) | VPN monitoring alerts. |  | <code>google_monitoring_alert_policy</code> |
 | [monitoring.tf](./monitoring.tf) | Network monitoring dashboards. |  | <code>google_monitoring_dashboard</code> |
 | [net-dev.tf](./net-dev.tf) | Dev spoke VPC and related resources. | <code>net-cloudnat</code> · <code>net-vpc</code> · <code>net-vpc-firewall</code> · <code>project</code> |  |
 | [net-landing.tf](./net-landing.tf) | Landing VPC and related resources. | <code>net-cloudnat</code> · <code>net-vpc</code> · <code>net-vpc-firewall</code> · <code>project</code> |  |
 | [net-prod.tf](./net-prod.tf) | Production spoke VPC and related resources. | <code>net-cloudnat</code> · <code>net-vpc</code> · <code>net-vpc-firewall</code> · <code>project</code> |  |
 | [outputs.tf](./outputs.tf) | Module outputs. |  | <code>google_storage_bucket_object</code> · <code>local_file</code> |
-| [peerings.tf](./peerings.tf) | None | <code>net-vpc-peering</code> |  |
 | [regions.tf](./regions.tf) | Compute short names for regions. |  |  |
-| [test-resources.tf](./test-resources.tf) | temporary instances for testing | <code>compute-vm</code> |  |
-| [variables-peerings.tf](./variables-peerings.tf) | Peering related variables. |  |  |
+| [spoke-peerings.tf](./spoke-peerings.tf) | Peerings between landing and spokes. | <code>net-vpc-peering</code> |  |
+| [spoke-vpns.tf](./spoke-vpns.tf) | VPN between landing and spokes. | <code>net-vpn-ha</code> |  |
+| [test-resources.tf](./test-resources.tf) | Temporary instances for testing |  |  |
+| [variables-fast.tf](./variables-fast.tf) | FAST stage interface. |  |  |
 | [variables.tf](./variables.tf) | Module variables. |  |  |
 | [vpn-onprem.tf](./vpn-onprem.tf) | VPN between landing and onprem. | <code>net-vpn-ha</code> |  |
 
@@ -387,24 +454,25 @@ DNS configurations are centralised in the `dns-*.tf` files. Spokes delegate DNS 
 
 | name | description | type | required | default | producer |
 |---|---|:---:|:---:|:---:|:---:|
-| [automation](variables.tf#L42) | Automation resources created by the bootstrap stage. | <code title="object&#40;&#123;&#10;  outputs_bucket &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> | ✓ |  | <code>0-bootstrap</code> |
-| [billing_account](variables.tf#L50) | Billing account id. If billing account is not part of the same org set `is_org_level` to false. | <code title="object&#40;&#123;&#10;  id           &#61; string&#10;  is_org_level &#61; optional&#40;bool, true&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> | ✓ |  | <code>0-bootstrap</code> |
-| [folder_ids](variables.tf#L126) | Folders to be used for the networking resources in folders/nnnnnnnnnnn format. If null, folder will be created. | <code title="object&#40;&#123;&#10;  networking      &#61; string&#10;  networking-dev  &#61; string&#10;  networking-prod &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> | ✓ |  | <code>1-resman</code> |
-| [organization](variables.tf#L136) | Organization details. | <code title="object&#40;&#123;&#10;  domain      &#61; string&#10;  id          &#61; number&#10;  customer_id &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> | ✓ |  | <code>0-bootstrap</code> |
-| [prefix](variables.tf#L152) | Prefix used for resources that need unique names. Use 9 characters or less. | <code>string</code> | ✓ |  | <code>0-bootstrap</code> |
+| [automation](variables-fast.tf#L19) | Automation resources created by the bootstrap stage. | <code title="object&#40;&#123;&#10;  outputs_bucket &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> | ✓ |  | <code>0-bootstrap</code> |
+| [billing_account](variables-fast.tf#L27) | Billing account id. If billing account is not part of the same org set `is_org_level` to false. | <code title="object&#40;&#123;&#10;  id           &#61; string&#10;  is_org_level &#61; optional&#40;bool, true&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> | ✓ |  | <code>0-bootstrap</code> |
+| [folder_ids](variables-fast.tf#L59) | Folders to be used for the networking resources in folders/nnnnnnnnnnn format. If null, folder will be created. | <code title="object&#40;&#123;&#10;  networking      &#61; string&#10;  networking-dev  &#61; string&#10;  networking-prod &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> | ✓ |  | <code>1-resman</code> |
+| [organization](variables-fast.tf#L69) | Organization details. | <code title="object&#40;&#123;&#10;  domain      &#61; string&#10;  id          &#61; number&#10;  customer_id &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> | ✓ |  | <code>0-bootstrap</code> |
+| [prefix](variables-fast.tf#L79) | Prefix used for resources that need unique names. Use a maximum of 9 chars for organizations, and 11 chars for tenants. | <code>string</code> | ✓ |  | <code>0-bootstrap</code> |
 | [alert_config](variables.tf#L17) | Configuration for monitoring alerts. | <code title="object&#40;&#123;&#10;  vpn_tunnel_established &#61; optional&#40;object&#40;&#123;&#10;    auto_close            &#61; optional&#40;string, null&#41;&#10;    duration              &#61; optional&#40;string, &#34;120s&#34;&#41;&#10;    enabled               &#61; optional&#40;bool, true&#41;&#10;    notification_channels &#61; optional&#40;list&#40;string&#41;, &#91;&#93;&#41;&#10;    user_labels           &#61; optional&#40;map&#40;string&#41;, &#123;&#125;&#41;&#10;  &#125;&#41;&#41;&#10;  vpn_tunnel_bandwidth &#61; optional&#40;object&#40;&#123;&#10;    auto_close            &#61; optional&#40;string, null&#41;&#10;    duration              &#61; optional&#40;string, &#34;120s&#34;&#41;&#10;    enabled               &#61; optional&#40;bool, true&#41;&#10;    notification_channels &#61; optional&#40;list&#40;string&#41;, &#91;&#93;&#41;&#10;    threshold_mbys        &#61; optional&#40;string, &#34;187.5&#34;&#41;&#10;    user_labels           &#61; optional&#40;map&#40;string&#41;, &#123;&#125;&#41;&#10;  &#125;&#41;&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  vpn_tunnel_established &#61; &#123;&#125;&#10;  vpn_tunnel_bandwidth   &#61; &#123;&#125;&#10;&#125;">&#123;&#8230;&#125;</code> |  |
-| [custom_roles](variables.tf#L63) | Custom roles defined at the org level, in key => id format. | <code title="object&#40;&#123;&#10;  service_project_network_admin &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> | <code>0-bootstrap</code> |
-| [dns](variables.tf#L72) | DNS configuration. | <code title="object&#40;&#123;&#10;  enable_logging &#61; optional&#40;bool, true&#41;&#10;  resolvers      &#61; optional&#40;list&#40;string&#41;, &#91;&#93;&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>&#123;&#125;</code> |  |
-| [enable_cloud_nat](variables.tf#L82) | Deploy Cloud NAT. | <code>bool</code> |  | <code>false</code> |  |
-| [essential_contacts](variables.tf#L89) | Email used for essential contacts, unset if null. | <code>string</code> |  | <code>null</code> |  |
-| [factories_config](variables.tf#L95) | Configuration for network resource factories. | <code title="object&#40;&#123;&#10;  data_dir              &#61; optional&#40;string, &#34;data&#34;&#41;&#10;  dns_policy_rules_file &#61; optional&#40;string, &#34;data&#47;dns-policy-rules.yaml&#34;&#41;&#10;  firewall_policy_name  &#61; optional&#40;string, &#34;net-default&#34;&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  data_dir &#61; &#34;data&#34;&#10;&#125;">&#123;&#8230;&#125;</code> |  |
-| [fast_features](variables.tf#L116) | Selective control for top-level FAST features. | <code title="object&#40;&#123;&#10;  gcve &#61; optional&#40;bool, false&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>&#123;&#125;</code> | <code>0-0-bootstrap</code> |
-| [outputs_location](variables.tf#L146) | Path where providers and tfvars files for the following stages are written. Leave empty to disable. | <code>string</code> |  | <code>null</code> |  |
-| [peering_configs](variables-peerings.tf#L19) | Peering configurations. | <code title="object&#40;&#123;&#10;  dev &#61; optional&#40;object&#40;&#123;&#10;    export        &#61; optional&#40;bool, true&#41;&#10;    import        &#61; optional&#40;bool, true&#41;&#10;    public_export &#61; optional&#40;bool&#41;&#10;    public_import &#61; optional&#40;bool&#41;&#10;  &#125;&#41;, &#123;&#125;&#41;&#10;  prod &#61; optional&#40;object&#40;&#123;&#10;    export        &#61; optional&#40;bool, true&#41;&#10;    import        &#61; optional&#40;bool, true&#41;&#10;    public_export &#61; optional&#40;bool&#41;&#10;    public_import &#61; optional&#40;bool&#41;&#10;  &#125;&#41;, &#123;&#125;&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>&#123;&#125;</code> |  |
-| [psa_ranges](variables.tf#L163) | IP ranges used for Private Service Access (CloudSQL, etc.). | <code title="object&#40;&#123;&#10;  dev &#61; optional&#40;list&#40;object&#40;&#123;&#10;    ranges         &#61; map&#40;string&#41;&#10;    export_routes  &#61; optional&#40;bool, false&#41;&#10;    import_routes  &#61; optional&#40;bool, false&#41;&#10;    peered_domains &#61; optional&#40;list&#40;string&#41;, &#91;&#93;&#41;&#10;  &#125;&#41;&#41;, &#91;&#93;&#41;&#10;  prod &#61; optional&#40;list&#40;object&#40;&#123;&#10;    ranges         &#61; map&#40;string&#41;&#10;    export_routes  &#61; optional&#40;bool, false&#41;&#10;    import_routes  &#61; optional&#40;bool, false&#41;&#10;    peered_domains &#61; optional&#40;list&#40;string&#41;, &#91;&#93;&#41;&#10;  &#125;&#41;&#41;, &#91;&#93;&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>&#123;&#125;</code> |  |
-| [regions](variables.tf#L183) | Region definitions. | <code title="object&#40;&#123;&#10;  primary   &#61; string&#10;  secondary &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  primary   &#61; &#34;europe-west1&#34;&#10;  secondary &#61; &#34;europe-west4&#34;&#10;&#125;">&#123;&#8230;&#125;</code> |  |
-| [service_accounts](variables.tf#L195) | Automation service accounts in name => email format. | <code title="object&#40;&#123;&#10;  data-platform-dev    &#61; string&#10;  data-platform-prod   &#61; string&#10;  gke-dev              &#61; string&#10;  gke-prod             &#61; string&#10;  project-factory-dev  &#61; string&#10;  project-factory-prod &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> | <code>1-resman</code> |
-| [vpn_onprem_primary_config](variables.tf#L209) | VPN gateway configuration for onprem interconnection in the primary region. | <code title="object&#40;&#123;&#10;  peer_external_gateways &#61; map&#40;object&#40;&#123;&#10;    redundancy_type &#61; string&#10;    interfaces      &#61; list&#40;string&#41;&#10;  &#125;&#41;&#41;&#10;  router_config &#61; object&#40;&#123;&#10;    create    &#61; optional&#40;bool, true&#41;&#10;    asn       &#61; number&#10;    name      &#61; optional&#40;string&#41;&#10;    keepalive &#61; optional&#40;number&#41;&#10;    custom_advertise &#61; optional&#40;object&#40;&#123;&#10;      all_subnets &#61; bool&#10;      ip_ranges   &#61; map&#40;string&#41;&#10;    &#125;&#41;&#41;&#10;  &#125;&#41;&#10;  tunnels &#61; map&#40;object&#40;&#123;&#10;    bgp_peer &#61; object&#40;&#123;&#10;      address        &#61; string&#10;      asn            &#61; number&#10;      route_priority &#61; optional&#40;number, 1000&#41;&#10;      custom_advertise &#61; optional&#40;object&#40;&#123;&#10;        all_subnets          &#61; bool&#10;        all_vpc_subnets      &#61; bool&#10;        all_peer_vpc_subnets &#61; bool&#10;        ip_ranges            &#61; map&#40;string&#41;&#10;      &#125;&#41;&#41;&#10;    &#125;&#41;&#10;    bgp_session_range               &#61; string&#10;    ike_version                     &#61; optional&#40;number, 2&#41;&#10;    peer_external_gateway_interface &#61; optional&#40;number&#41;&#10;    peer_gateway                    &#61; optional&#40;string, &#34;default&#34;&#41;&#10;    router                          &#61; optional&#40;string&#41;&#10;    shared_secret                   &#61; optional&#40;string&#41;&#10;    vpn_gateway_interface           &#61; number&#10;  &#125;&#41;&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> |  |
+| [create_test_instances](variables.tf#L42) | Enables the creation of test VMs in each VPC, useful to test and troubleshoot connectivity. | <code>bool</code> |  | <code>false</code> |  |
+| [custom_roles](variables-fast.tf#L40) | Custom roles defined at the org level, in key => id format. | <code title="object&#40;&#123;&#10;  service_project_network_admin &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> | <code>0-bootstrap</code> |
+| [dns](variables.tf#L48) | DNS configuration. | <code title="object&#40;&#123;&#10;  enable_logging &#61; optional&#40;bool, true&#41;&#10;  resolvers      &#61; optional&#40;list&#40;string&#41;, &#91;&#93;&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>&#123;&#125;</code> |  |
+| [enable_cloud_nat](variables.tf#L58) | Deploy Cloud NAT. | <code>bool</code> |  | <code>false</code> |  |
+| [essential_contacts](variables.tf#L65) | Email used for essential contacts, unset if null. | <code>string</code> |  | <code>null</code> |  |
+| [factories_config](variables.tf#L71) | Configuration for network resource factories. | <code title="object&#40;&#123;&#10;  data_dir              &#61; optional&#40;string, &#34;data&#34;&#41;&#10;  dns_policy_rules_file &#61; optional&#40;string, &#34;data&#47;dns-policy-rules.yaml&#34;&#41;&#10;  firewall_policy_name  &#61; optional&#40;string, &#34;net-default&#34;&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  data_dir &#61; &#34;data&#34;&#10;&#125;">&#123;&#8230;&#125;</code> |  |
+| [fast_features](variables-fast.tf#L49) | Selective control for top-level FAST features. | <code title="object&#40;&#123;&#10;  gcve &#61; optional&#40;bool, false&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>&#123;&#125;</code> | <code>0-0-bootstrap</code> |
+| [outputs_location](variables.tf#L92) | Path where providers and tfvars files for the following stages are written. Leave empty to disable. | <code>string</code> |  | <code>null</code> |  |
+| [psa_ranges](variables.tf#L98) | IP ranges used for Private Service Access (CloudSQL, etc.). | <code title="object&#40;&#123;&#10;  dev &#61; optional&#40;list&#40;object&#40;&#123;&#10;    ranges         &#61; map&#40;string&#41;&#10;    export_routes  &#61; optional&#40;bool, false&#41;&#10;    import_routes  &#61; optional&#40;bool, false&#41;&#10;    peered_domains &#61; optional&#40;list&#40;string&#41;, &#91;&#93;&#41;&#10;  &#125;&#41;&#41;, &#91;&#93;&#41;&#10;  prod &#61; optional&#40;list&#40;object&#40;&#123;&#10;    ranges         &#61; map&#40;string&#41;&#10;    export_routes  &#61; optional&#40;bool, false&#41;&#10;    import_routes  &#61; optional&#40;bool, false&#41;&#10;    peered_domains &#61; optional&#40;list&#40;string&#41;, &#91;&#93;&#41;&#10;  &#125;&#41;&#41;, &#91;&#93;&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>&#123;&#125;</code> |  |
+| [regions](variables.tf#L118) | Region definitions. | <code title="object&#40;&#123;&#10;  primary   &#61; string&#10;  secondary &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  primary   &#61; &#34;europe-west1&#34;&#10;  secondary &#61; &#34;europe-west4&#34;&#10;&#125;">&#123;&#8230;&#125;</code> |  |
+| [service_accounts](variables-fast.tf#L89) | Automation service accounts in name => email format. | <code title="object&#40;&#123;&#10;  data-platform-dev    &#61; string&#10;  data-platform-prod   &#61; string&#10;  gke-dev              &#61; string&#10;  gke-prod             &#61; string&#10;  project-factory      &#61; string&#10;  project-factory-dev  &#61; string&#10;  project-factory-prod &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> | <code>1-resman</code> |
+| [spoke_configs](variables.tf#L130) | Spoke connectivity configurations. | <code title="object&#40;&#123;&#10;  peering_configs &#61; optional&#40;object&#40;&#123;&#10;    dev &#61; optional&#40;object&#40;&#123;&#10;      export        &#61; optional&#40;bool, true&#41;&#10;      import        &#61; optional&#40;bool, true&#41;&#10;      public_export &#61; optional&#40;bool&#41;&#10;      public_import &#61; optional&#40;bool&#41;&#10;    &#125;&#41;, &#123;&#125;&#41;&#10;    prod &#61; optional&#40;object&#40;&#123;&#10;      export        &#61; optional&#40;bool, true&#41;&#10;      import        &#61; optional&#40;bool, true&#41;&#10;      public_export &#61; optional&#40;bool&#41;&#10;      public_import &#61; optional&#40;bool&#41;&#10;    &#125;&#41;, &#123;&#125;&#41;&#10;  &#125;&#41;&#41;&#10;  vpn_configs &#61; optional&#40;object&#40;&#123;&#10;    dev &#61; optional&#40;object&#40;&#123;&#10;      asn &#61; optional&#40;number, 65501&#41;&#10;      custom_advertise &#61; optional&#40;object&#40;&#123;&#10;        all_subnets &#61; bool&#10;        ip_ranges   &#61; map&#40;string&#41;&#10;      &#125;&#41;&#41;&#10;    &#125;&#41;, &#123;&#125;&#41;&#10;    landing &#61; optional&#40;object&#40;&#123;&#10;      asn &#61; optional&#40;number, 65500&#41;&#10;      custom_advertise &#61; optional&#40;object&#40;&#123;&#10;        all_subnets &#61; bool&#10;        ip_ranges   &#61; map&#40;string&#41;&#10;      &#125;&#41;&#41;&#10;    &#125;&#41;, &#123;&#125;&#41;&#10;    prod &#61; optional&#40;object&#40;&#123;&#10;      asn &#61; optional&#40;number, 65502&#41;&#10;      custom_advertise &#61; optional&#40;object&#40;&#123;&#10;        all_subnets &#61; bool&#10;        ip_ranges   &#61; map&#40;string&#41;&#10;      &#125;&#41;&#41;&#10;    &#125;&#41;, &#123;&#125;&#41;&#10;  &#125;&#41;&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  peering_configs &#61; &#123;&#125;&#10;&#125;">&#123;&#8230;&#125;</code> |  |
+| [vpn_onprem_primary_config](variables.tf#L180) | VPN gateway configuration for onprem interconnection in the primary region. | <code title="object&#40;&#123;&#10;  peer_external_gateways &#61; map&#40;object&#40;&#123;&#10;    redundancy_type &#61; string&#10;    interfaces      &#61; list&#40;string&#41;&#10;  &#125;&#41;&#41;&#10;  router_config &#61; object&#40;&#123;&#10;    create    &#61; optional&#40;bool, true&#41;&#10;    asn       &#61; number&#10;    name      &#61; optional&#40;string&#41;&#10;    keepalive &#61; optional&#40;number&#41;&#10;    custom_advertise &#61; optional&#40;object&#40;&#123;&#10;      all_subnets &#61; bool&#10;      ip_ranges   &#61; map&#40;string&#41;&#10;    &#125;&#41;&#41;&#10;  &#125;&#41;&#10;  tunnels &#61; map&#40;object&#40;&#123;&#10;    bgp_peer &#61; object&#40;&#123;&#10;      address        &#61; string&#10;      asn            &#61; number&#10;      route_priority &#61; optional&#40;number, 1000&#41;&#10;      custom_advertise &#61; optional&#40;object&#40;&#123;&#10;        all_subnets          &#61; bool&#10;        all_vpc_subnets      &#61; bool&#10;        all_peer_vpc_subnets &#61; bool&#10;        ip_ranges            &#61; map&#40;string&#41;&#10;      &#125;&#41;&#41;&#10;    &#125;&#41;&#10;    bgp_session_range               &#61; string&#10;    ike_version                     &#61; optional&#40;number, 2&#41;&#10;    peer_external_gateway_interface &#61; optional&#40;number&#41;&#10;    peer_gateway                    &#61; optional&#40;string, &#34;default&#34;&#41;&#10;    router                          &#61; optional&#40;string&#41;&#10;    shared_secret                   &#61; optional&#40;string&#41;&#10;    vpn_gateway_interface           &#61; number&#10;  &#125;&#41;&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> |  |
 
 ## Outputs
 
@@ -413,7 +481,8 @@ DNS configurations are centralised in the `dns-*.tf` files. Spokes delegate DNS 
 | [cloud_dns_inbound_policy](outputs.tf#L87) | IP Addresses for Cloud DNS inbound policy. |  |  |
 | [host_project_ids](outputs.tf#L92) | Network project ids. |  |  |
 | [host_project_numbers](outputs.tf#L97) | Network project numbers. |  |  |
-| [shared_vpc_self_links](outputs.tf#L102) | Shared VPC host projects. |  |  |
-| [tfvars](outputs.tf#L107) | Terraform variables file for the following stages. | ✓ |  |
-| [vpn_gateway_endpoints](outputs.tf#L113) | External IP Addresses for the GCP VPN gateways. |  |  |
+| [ping_commands](outputs.tf#L102) | Ping commands for test instances to be run to check VPC reachability. |  |  |
+| [shared_vpc_self_links](outputs.tf#L107) | Shared VPC host projects. |  |  |
+| [tfvars](outputs.tf#L112) | Terraform variables file for the following stages. | ✓ |  |
+| [vpn_gateway_endpoints](outputs.tf#L118) | External IP Addresses for the GCP VPN gateways. |  |  |
 <!-- END TFDOC -->

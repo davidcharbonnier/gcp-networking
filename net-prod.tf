@@ -17,7 +17,7 @@
 # tfdoc:file:description Production spoke VPC and related resources.
 
 module "prod-spoke-project" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v31.1.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v32.0.1"
   billing_account = var.billing_account.id
   name            = "prod-net-spoke-0"
   parent          = var.folder_ids.networking-prod
@@ -46,6 +46,7 @@ module "prod-spoke-project" {
   iam = {
     "roles/dns.admin" = compact([
       try(local.service_accounts.gke-prod, null),
+      try(local.service_accounts.project-factory, null),
       try(local.service_accounts.project-factory-prod, null),
     ])
   }
@@ -55,6 +56,7 @@ module "prod-spoke-project" {
       role = "roles/resourcemanager.projectIamAdmin"
       members = compact([
         try(local.service_accounts.data-platform-prod, null),
+        try(local.service_accounts.project-factory, null),
         try(local.service_accounts.project-factory-prod, null),
         try(local.service_accounts.gke-prod, null),
       ])
@@ -71,7 +73,7 @@ module "prod-spoke-project" {
 }
 
 module "prod-spoke-vpc" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v31.1.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v32.0.1"
   project_id = module.prod-spoke-project.project_id
   name       = "prod-spoke-0"
   mtu        = 1500
@@ -81,16 +83,20 @@ module "prod-spoke-vpc" {
   factories_config = {
     subnets_folder = "${var.factories_config.data_dir}/subnets/prod"
   }
-  psa_configs = var.psa_ranges.prod
-  # set explicit routes for googleapis in case the default route is deleted
-  create_googleapis_routes = {
-    private    = true
-    restricted = true
+  psa_configs                     = var.psa_ranges.prod
+  delete_default_routes_on_create = true
+  routes = {
+    default = {
+      dest_range    = "0.0.0.0/0"
+      next_hop      = "default-internet-gateway"
+      next_hop_type = "gateway"
+      priority      = 1000
+    }
   }
 }
 
 module "prod-spoke-firewall" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v31.1.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v32.0.1"
   project_id = module.prod-spoke-project.project_id
   network    = module.prod-spoke-vpc.name
   default_rules_config = {
@@ -103,7 +109,7 @@ module "prod-spoke-firewall" {
 }
 
 module "prod-spoke-cloudnat" {
-  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v31.1.0"
+  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v32.0.1"
   for_each       = toset(var.enable_cloud_nat ? values(module.prod-spoke-vpc.subnet_regions) : [])
   project_id     = module.prod-spoke-project.project_id
   region         = each.value

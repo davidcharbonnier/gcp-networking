@@ -19,7 +19,7 @@
 # forwarding to on-prem DNS resolvers
 
 #module "landing-dns-fwd-onprem-example" {
-#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v31.1.0"
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v32.0.1"
 #  count      = length(var.dns.resolvers) > 0 ? 1 : 0
 #  project_id = module.landing-project.project_id
 #  name       = "example-com"
@@ -33,7 +33,7 @@
 #}
 
 #module "landing-dns-fwd-onprem-rev-10" {
-#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v31.1.0"
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v32.0.1"
 #  count      = length(var.dns.resolvers) > 0 ? 1 : 0
 #  project_id = module.landing-project.project_id
 #  name       = "root-reverse-10"
@@ -47,7 +47,7 @@
 #}
 
 #module "landing-dns-priv-gcp" {
-#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v31.1.0"
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v32.0.1"
 #  project_id = module.landing-project.project_id
 #  name       = "gcp-example-com"
 #  zone_config = {
@@ -64,7 +64,7 @@
 # Google APIs via response policies
 
 module "landing-dns-policy-googleapis" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns-response-policy?ref=v31.1.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns-response-policy?ref=v32.0.1"
   project_id = module.landing-project.project_id
   name       = "googleapis"
   factories_config = {
@@ -78,7 +78,7 @@ module "landing-dns-policy-googleapis" {
 # davidcharbonnier.fr public zone
 
 module "davidcharbonnier-dns-public-zone" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v31.1.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v32.0.1"
   project_id      = module.landing-project.project_id
   name            = "davidcharbonnier-fr"
   zone_config = {

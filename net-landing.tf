@@ -17,7 +17,7 @@
 # tfdoc:file:description Landing VPC and related resources.
 
 module "landing-project" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v31.1.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v32.0.1"
   billing_account = var.billing_account.id
   name            = "prod-net-landing-0"
   parent          = var.folder_ids.networking-prod
@@ -35,16 +35,18 @@ module "landing-project" {
   }
   iam = {
     "roles/dns.admin" = compact([
+      try(local.service_accounts.project-factory, null),
       try(local.service_accounts.project-factory-prod, null)
     ])
     (local.custom_roles.service_project_network_admin) = compact([
+      try(local.service_accounts.project-factory, null),
       try(local.service_accounts.project-factory-prod, null)
     ])
   }
 }
 
 module "landing-vpc" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v31.1.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v32.0.1"
   project_id = module.landing-project.project_id
   name       = "prod-landing-0"
   mtu        = 1500
@@ -52,18 +54,22 @@ module "landing-vpc" {
     inbound = true
     logging = var.dns.enable_logging
   }
-  # set explicit routes for googleapis in case the default route is deleted
-  create_googleapis_routes = {
-    private    = true
-    restricted = true
-  }
   factories_config = {
     subnets_folder = "${var.factories_config.data_dir}/subnets/landing"
+  }
+  delete_default_routes_on_create = true
+  routes = {
+    default = {
+      dest_range    = "0.0.0.0/0"
+      next_hop      = "default-internet-gateway"
+      next_hop_type = "gateway"
+      priority      = 1000
+    }
   }
 }
 
 module "landing-firewall" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v31.1.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v32.0.1"
   project_id = module.landing-project.project_id
   network    = module.landing-vpc.name
   default_rules_config = {
@@ -76,7 +82,7 @@ module "landing-firewall" {
 }
 
 module "landing-nat-primary" {
-  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v31.1.0"
+  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v32.0.1"
   count          = var.enable_cloud_nat ? 1 : 0
   project_id     = module.landing-project.project_id
   region         = var.regions.primary

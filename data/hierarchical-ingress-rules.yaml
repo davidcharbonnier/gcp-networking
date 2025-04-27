@@ -22,8 +22,8 @@ allow-healthchecks:
 
 allow-ssh-from-iap:
   description: Enable SSH from IAP
-  enable_logging: true
   priority: 1002
+  enable_logging: true
   match:
     source_ranges:
       - 35.235.240.0/20

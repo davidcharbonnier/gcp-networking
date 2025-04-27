@@ -39,34 +39,10 @@ variable "alert_config" {
   }
 }
 
-variable "automation" {
-  # tfdoc:variable:source 0-bootstrap
-  description = "Automation resources created by the bootstrap stage."
-  type = object({
-    outputs_bucket = string
-  })
-}
-
-variable "billing_account" {
-  # tfdoc:variable:source 0-bootstrap
-  description = "Billing account id. If billing account is not part of the same org set `is_org_level` to false."
-  type = object({
-    id           = string
-    is_org_level = optional(bool, true)
-  })
-  validation {
-    condition     = var.billing_account.is_org_level != null
-    error_message = "Invalid `null` value for `billing_account.is_org_level`."
-  }
-}
-
-variable "custom_roles" {
-  # tfdoc:variable:source 0-bootstrap
-  description = "Custom roles defined at the org level, in key => id format."
-  type = object({
-    service_project_network_admin = string
-  })
-  default = null
+variable "create_test_instances" {
+  description = "Enables the creation of test VMs in each VPC, useful to test and troubleshoot connectivity."
+  type        = bool
+  default     = false
 }
 
 variable "dns" {
@@ -113,51 +89,10 @@ variable "factories_config" {
   }
 }
 
-variable "fast_features" {
-  # tfdoc:variable:source 0-0-bootstrap
-  description = "Selective control for top-level FAST features."
-  type = object({
-    gcve = optional(bool, false)
-  })
-  default  = {}
-  nullable = false
-}
-
-variable "folder_ids" {
-  # tfdoc:variable:source 1-resman
-  description = "Folders to be used for the networking resources in folders/nnnnnnnnnnn format. If null, folder will be created."
-  type = object({
-    networking      = string
-    networking-dev  = string
-    networking-prod = string
-  })
-}
-
-variable "organization" {
-  # tfdoc:variable:source 0-bootstrap
-  description = "Organization details."
-  type = object({
-    domain      = string
-    id          = number
-    customer_id = string
-  })
-}
-
 variable "outputs_location" {
   description = "Path where providers and tfvars files for the following stages are written. Leave empty to disable."
   type        = string
   default     = null
-}
-
-variable "prefix" {
-  # tfdoc:variable:source 0-bootstrap
-  description = "Prefix used for resources that need unique names. Use 9 characters or less."
-  type        = string
-
-  validation {
-    condition     = try(length(var.prefix), 0) < 10
-    error_message = "Use a maximum of 9 characters for prefix."
-  }
 }
 
 variable "psa_ranges" {
@@ -192,18 +127,54 @@ variable "regions" {
   }
 }
 
-variable "service_accounts" {
-  # tfdoc:variable:source 1-resman
-  description = "Automation service accounts in name => email format."
+variable "spoke_configs" {
+  description = "Spoke connectivity configurations."
   type = object({
-    data-platform-dev    = string
-    data-platform-prod   = string
-    gke-dev              = string
-    gke-prod             = string
-    project-factory-dev  = string
-    project-factory-prod = string
+    peering_configs = optional(object({
+      dev = optional(object({
+        export        = optional(bool, true)
+        import        = optional(bool, true)
+        public_export = optional(bool)
+        public_import = optional(bool)
+      }), {})
+      prod = optional(object({
+        export        = optional(bool, true)
+        import        = optional(bool, true)
+        public_export = optional(bool)
+        public_import = optional(bool)
+      }), {})
+    }))
+    vpn_configs = optional(object({
+      dev = optional(object({
+        asn = optional(number, 65501)
+        custom_advertise = optional(object({
+          all_subnets = bool
+          ip_ranges   = map(string)
+        }))
+      }), {})
+      landing = optional(object({
+        asn = optional(number, 65500)
+        custom_advertise = optional(object({
+          all_subnets = bool
+          ip_ranges   = map(string)
+        }))
+      }), {})
+      prod = optional(object({
+        asn = optional(number, 65502)
+        custom_advertise = optional(object({
+          all_subnets = bool
+          ip_ranges   = map(string)
+        }))
+      }), {})
+    }))
   })
-  default = null
+  default = {
+    peering_configs = {}
+  }
+  validation {
+    condition     = (var.spoke_configs.peering_configs == null) != (var.spoke_configs.vpn_configs == null)
+    error_message = "Only one of `var.spoke_configs.peering_configs` or `var.spoke_configs.vpn_configs` must be configured."
+  }
 }
 
 variable "vpn_onprem_primary_config" {

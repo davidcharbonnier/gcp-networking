@@ -19,7 +19,7 @@
 # GCP-specific environment zone
 
 #module "dev-dns-priv-example" {
-#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v31.1.0"
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v32.0.1"
 #  project_id = module.dev-spoke-project.project_id
 #  name       = "dev-gcp-example-com"
 #  zone_config = {
@@ -36,7 +36,7 @@
 # root zone peering to landing to centralize configuration; remove if unneeded
 
 module "dev-dns-peer-landing-root" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v31.1.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v32.0.1"
   project_id = module.dev-spoke-project.project_id
   name       = "dev-root-dns-peering"
   zone_config = {
@@ -49,7 +49,7 @@ module "dev-dns-peer-landing-root" {
 }
 
 #module "dev-dns-peer-landing-rev-10" {
-#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v31.1.0"
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v32.0.1"
 #  project_id = module.dev-spoke-project.project_id
 #  name       = "dev-reverse-10-dns-peering"
 #  zone_config = {
