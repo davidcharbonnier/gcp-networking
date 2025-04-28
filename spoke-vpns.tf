@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,14 +36,9 @@ locals {
   }
 }
 
-moved {
-  from = module.landing-to-spokes-primary-vpn
-  to   = module.landing-to-spokes-primary-vpn[0]
-}
-
 module "landing-to-spokes-primary-vpn" {
   count      = local.spoke_connection == "vpn" ? 1 : 0
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v32.0.1"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v33.0.0"
   project_id = module.landing-project.project_id
   network    = module.landing-vpc.self_link
   region     = var.regions.primary
@@ -96,14 +91,9 @@ module "landing-to-spokes-primary-vpn" {
   }
 }
 
-moved {
-  from = module.landing-to-spokes-secondary-vpn
-  to   = module.landing-to-spokes-secondary-vpn[1]
-}
-
 module "landing-to-spokes-secondary-vpn" {
   count      = local.spoke_connection == "vpn" ? 1 : 0
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v32.0.1"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v33.0.0"
   project_id = module.landing-project.project_id
   network    = module.landing-vpc.self_link
   region     = var.regions.secondary
@@ -137,14 +127,9 @@ module "landing-to-spokes-secondary-vpn" {
   }
 }
 
-moved {
-  from = module.dev-to-landing-primary-vpn
-  to   = module.dev-to-landing-primary-vpn[1]
-}
-
 module "dev-to-landing-primary-vpn" {
   count      = local.spoke_connection == "vpn" ? 1 : 0
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v32.0.1"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v33.0.0"
   project_id = module.dev-spoke-project.project_id
   network    = module.dev-spoke-vpc.self_link
   region     = var.regions.primary
@@ -178,14 +163,9 @@ module "dev-to-landing-primary-vpn" {
   }
 }
 
-moved {
-  from = module.prod-to-landing-primary-vpn
-  to   = module.prod-to-landing-primary-vpn[1]
-}
-
 module "prod-to-landing-primary-vpn" {
   count      = local.spoke_connection == "vpn" ? 1 : 0
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v32.0.1"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v33.0.0"
   project_id = module.prod-spoke-project.project_id
   network    = module.prod-spoke-vpc.self_link
   region     = var.regions.primary
@@ -219,13 +199,9 @@ module "prod-to-landing-primary-vpn" {
   }
 }
 
-moved {
-  from = module.prod-to-landing-secondary-vpn
-  to   = module.prod-to-landing-secondary-vpn[1]
-}
 module "prod-to-landing-secondary-vpn" {
   count      = local.spoke_connection == "vpn" ? 1 : 0
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v32.0.1"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v33.0.0"
   project_id = module.prod-spoke-project.project_id
   network    = module.prod-spoke-vpc.self_link
   region     = var.regions.secondary

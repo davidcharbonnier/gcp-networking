@@ -17,12 +17,15 @@
 # tfdoc:file:description Networking folder and hierarchical policy.
 
 locals {
-  custom_roles = coalesce(var.custom_roles, {})
   service_accounts = {
     for k, v in coalesce(var.service_accounts, {}) :
     k => "serviceAccount:${v}" if v != null
   }
-  spoke_connection = var.spoke_configs.peering_configs != null ? "peering" : "vpn"
+  spoke_connection = coalesce(
+    var.spoke_configs.peering_configs != null ? "peering" : null,
+    var.spoke_configs.vpn_configs != null ? "vpn" : null,
+    var.spoke_configs.ncc_configs != null ? "ncc" : null,
+  )
   stage3_sas_delegated_grants = [
     "roles/composer.sharedVpcAgent",
     "roles/compute.networkUser",
@@ -41,7 +44,7 @@ locals {
 }
 
 module "folder" {
-  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder?ref=v32.0.1"
+  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder?ref=v33.0.0"
   parent        = "organizations/${var.organization.id}"
   name          = "Networking"
   folder_create = var.folder_ids.networking == null
@@ -58,7 +61,7 @@ module "folder" {
 }
 
 module "firewall-policy-default" {
-  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v32.0.1"
+  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v33.0.0"
   name      = var.factories_config.firewall_policy_name
   parent_id = module.folder.id
   factories_config = {

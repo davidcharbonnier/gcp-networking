@@ -17,7 +17,7 @@
 # tfdoc:file:description Production spoke VPC and related resources.
 
 module "prod-spoke-project" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v32.0.1"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v33.0.0"
   billing_account = var.billing_account.id
   name            = "prod-net-spoke-0"
   parent          = var.folder_ids.networking-prod
@@ -29,6 +29,7 @@ module "prod-spoke-project" {
       "dns.googleapis.com",
       "iap.googleapis.com",
       "networkmanagement.googleapis.com",
+      "networksecurity.googleapis.com",
       "servicenetworking.googleapis.com",
       "stackdriver.googleapis.com",
       "vpcaccess.googleapis.com"
@@ -46,8 +47,6 @@ module "prod-spoke-project" {
   iam = {
     "roles/dns.admin" = compact([
       try(local.service_accounts.gke-prod, null),
-      try(local.service_accounts.project-factory, null),
-      try(local.service_accounts.project-factory-prod, null),
     ])
   }
   # allow specific service accounts to assign a set of roles
@@ -73,7 +72,7 @@ module "prod-spoke-project" {
 }
 
 module "prod-spoke-vpc" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v32.0.1"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v33.0.0"
   project_id = module.prod-spoke-project.project_id
   name       = "prod-spoke-0"
   mtu        = 1500
@@ -81,6 +80,7 @@ module "prod-spoke-vpc" {
     logging = var.dns.enable_logging
   }
   factories_config = {
+    context        = { regions = var.regions }
     subnets_folder = "${var.factories_config.data_dir}/subnets/prod"
   }
   psa_configs                     = var.psa_ranges.prod
@@ -96,7 +96,7 @@ module "prod-spoke-vpc" {
 }
 
 module "prod-spoke-firewall" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v32.0.1"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v33.0.0"
   project_id = module.prod-spoke-project.project_id
   network    = module.prod-spoke-vpc.name
   default_rules_config = {
@@ -109,7 +109,7 @@ module "prod-spoke-firewall" {
 }
 
 module "prod-spoke-cloudnat" {
-  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v32.0.1"
+  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v33.0.0"
   for_each       = toset(var.enable_cloud_nat ? values(module.prod-spoke-vpc.subnet_regions) : [])
   project_id     = module.prod-spoke-project.project_id
   region         = each.value

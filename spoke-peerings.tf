@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,18 @@
 
 # tfdoc:file:description Peerings between landing and spokes.
 
-moved {
-  from = module.peering-dev
-  to   = module.peering-dev[0]
-}
-
 module "peering-dev" {
   count         = local.spoke_connection == "peering" ? 1 : 0
-  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-peering?ref=v32.0.1"
+  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-peering?ref=v33.0.0"
   prefix        = "dev-peering-0"
   local_network = module.dev-spoke-vpc.self_link
   peer_network  = module.landing-vpc.self_link
   routes_config = var.spoke_configs.peering_configs.dev
 }
 
-moved {
-  from = module.peering-prod
-  to   = module.peering-prod[0]
-}
-
 module "peering-prod" {
   count         = local.spoke_connection == "peering" ? 1 : 0
-  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-peering?ref=v32.0.1"
+  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-peering?ref=v33.0.0"
   prefix        = "prod-peering-0"
   local_network = module.prod-spoke-vpc.self_link
   peer_network  = module.landing-vpc.self_link
