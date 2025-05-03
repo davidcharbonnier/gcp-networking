@@ -18,20 +18,46 @@
 
 module "peering-dev" {
   count         = local.spoke_connection == "peering" ? 1 : 0
-  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-peering?ref=v33.0.0"
+  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-peering?ref=v34.1.0"
   prefix        = "dev-peering-0"
   local_network = module.dev-spoke-vpc.self_link
   peer_network  = module.landing-vpc.self_link
-  routes_config = var.spoke_configs.peering_configs.dev
+  routes_config = {
+    local = {
+      export        = var.spoke_configs.peering_configs.dev.export
+      import        = var.spoke_configs.peering_configs.dev.import
+      public_export = var.spoke_configs.peering_configs.dev.public_export
+      public_import = var.spoke_configs.peering_configs.dev.public_import
+    }
+    peer = {
+      export        = var.spoke_configs.peering_configs.dev.import
+      import        = var.spoke_configs.peering_configs.dev.export
+      public_export = var.spoke_configs.peering_configs.dev.public_import
+      public_import = var.spoke_configs.peering_configs.dev.public_export
+    }
+  }
 }
 
 module "peering-prod" {
   count         = local.spoke_connection == "peering" ? 1 : 0
-  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-peering?ref=v33.0.0"
+  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-peering?ref=v34.1.0"
   prefix        = "prod-peering-0"
   local_network = module.prod-spoke-vpc.self_link
   peer_network  = module.landing-vpc.self_link
-  routes_config = var.spoke_configs.peering_configs.prod
-  depends_on    = [module.peering-dev]
+  routes_config = {
+    local = {
+      export        = var.spoke_configs.peering_configs.prod.export
+      import        = var.spoke_configs.peering_configs.prod.import
+      public_export = var.spoke_configs.peering_configs.prod.public_export
+      public_import = var.spoke_configs.peering_configs.prod.public_import
+    }
+    peer = {
+      export        = var.spoke_configs.peering_configs.prod.import
+      import        = var.spoke_configs.peering_configs.prod.export
+      public_export = var.spoke_configs.peering_configs.prod.public_import
+      public_import = var.spoke_configs.peering_configs.prod.public_export
+    }
+  }
+  depends_on = [module.peering-dev]
 }
 

@@ -49,7 +49,7 @@ locals {
 module "test-vms" {
   for_each = local.test-vms
   # for_each   = {}
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/compute-vm?ref=v33.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/compute-vm?ref=v34.1.0"
   project_id = each.value.project_id
   zone       = "${each.value.region}-${each.value.zone}"
   name       = "test-vm-${each.key}"
