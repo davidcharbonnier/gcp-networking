@@ -17,31 +17,33 @@
 # tfdoc:file:description Landing VPC and related resources.
 
 module "landing-project" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v35.1.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v36.2.0"
   billing_account = var.billing_account.id
   name            = "prod-net-landing-0"
-  parent          = var.folder_ids.networking-prod
-  prefix          = var.prefix
-  services = concat([
+  parent = coalesce(
+    var.folder_ids.networking-prod,
+    var.folder_ids.networking
+  )
+  prefix = var.prefix
+  services = [
     "compute.googleapis.com",
     "dns.googleapis.com",
     "iap.googleapis.com",
+    "networkconnectivity.googleapis.com",
     "networkmanagement.googleapis.com",
     "stackdriver.googleapis.com",
     "domains.googleapis.com"
-    ], (
-    local.spoke_connection == "ncc"
-    ? ["networkconnectivity.googleapis.com"]
-    : []
-    )
-  )
+  ]
   shared_vpc_host_config = {
     enabled = true
+  }
+  tag_bindings = local.has_env_folders ? {} : {
+    environment = local.env_tag_values["prod"]
   }
 }
 
 module "landing-vpc" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v35.1.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v36.2.0"
   project_id = module.landing-project.project_id
   name       = "prod-landing-0"
   mtu        = 1500
@@ -66,7 +68,7 @@ module "landing-vpc" {
 
 module "landing-firewall" {
   count      = local.spoke_connection != "ncc" ? 1 : 0
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v35.1.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v36.2.0"
   project_id = module.landing-project.project_id
   network    = module.landing-vpc.name
   default_rules_config = {
@@ -79,7 +81,7 @@ module "landing-firewall" {
 }
 
 module "landing-nat-primary" {
-  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v35.1.0"
+  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v36.2.0"
   count          = var.enable_cloud_nat && local.spoke_connection != "ncc" ? 1 : 0
   project_id     = module.landing-project.project_id
   region         = var.regions.primary
