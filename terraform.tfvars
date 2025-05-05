@@ -1,5 +1,3 @@
-dns = {}
-
 #psa_ranges = {
 #  dev = [
 #    {

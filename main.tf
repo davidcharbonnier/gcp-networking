@@ -51,7 +51,7 @@ locals {
 }
 
 module "folder" {
-  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder?ref=v36.2.0"
+  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder?ref=v37.4.0"
   folder_create = false
   id            = var.folder_ids.networking
   contacts = (
@@ -66,12 +66,12 @@ module "folder" {
 }
 
 module "firewall-policy-default" {
-  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v36.2.0"
-  name      = var.factories_config.firewall_policy_name
+  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v37.4.0"
+  name      = var.factories_config.firewall.hierarchical.policy_name
   parent_id = module.folder.id
   factories_config = {
-    cidr_file_path          = "${var.factories_config.data_dir}/cidrs.yaml"
-    ingress_rules_file_path = "${var.factories_config.data_dir}/hierarchical-ingress-rules.yaml"
+    cidr_file_path          = var.factories_config.firewall.cidr_file
+    ingress_rules_file_path = var.factories_config.firewall.hierarchical.ingress_rules
   }
 }
 

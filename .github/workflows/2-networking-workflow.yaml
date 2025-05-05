@@ -26,7 +26,7 @@ on:
 env:
   FAST_SERVICE_ACCOUNT: dch-prod-resman-net-1@dch-prod-iac-core-0.iam.gserviceaccount.com
   FAST_SERVICE_ACCOUNT_PLAN: dch-prod-resman-net-1r@dch-prod-iac-core-0.iam.gserviceaccount.com
-  FAST_WIF_PROVIDER: projects/496489482873/locations/global/workloadIdentityPools/dch-bootstrap/providers/dch-bootstrap-github
+  FAST_WIF_PROVIDER: 
   SSH_AUTH_SOCK: /tmp/ssh_agent.sock
   TF_PROVIDERS_FILE: 2-networking-providers.tf
   TF_PROVIDERS_FILE_PLAN: 2-networking-r-providers.tf

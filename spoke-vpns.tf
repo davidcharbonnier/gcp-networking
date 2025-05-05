@@ -38,7 +38,7 @@ locals {
 
 module "landing-to-spokes-primary-vpn" {
   count      = local.spoke_connection == "vpn" ? 1 : 0
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v36.2.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v37.4.0"
   project_id = module.landing-project.project_id
   network    = module.landing-vpc.self_link
   region     = var.regions.primary
@@ -93,7 +93,7 @@ module "landing-to-spokes-primary-vpn" {
 
 module "landing-to-spokes-secondary-vpn" {
   count      = local.spoke_connection == "vpn" ? 1 : 0
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v36.2.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v37.4.0"
   project_id = module.landing-project.project_id
   network    = module.landing-vpc.self_link
   region     = var.regions.secondary
@@ -129,7 +129,7 @@ module "landing-to-spokes-secondary-vpn" {
 
 module "dev-to-landing-primary-vpn" {
   count      = local.spoke_connection == "vpn" ? 1 : 0
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v36.2.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v37.4.0"
   project_id = module.dev-spoke-project.project_id
   network    = module.dev-spoke-vpc.self_link
   region     = var.regions.primary
@@ -165,7 +165,7 @@ module "dev-to-landing-primary-vpn" {
 
 module "prod-to-landing-primary-vpn" {
   count      = local.spoke_connection == "vpn" ? 1 : 0
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v36.2.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v37.4.0"
   project_id = module.prod-spoke-project.project_id
   network    = module.prod-spoke-vpc.self_link
   region     = var.regions.primary
@@ -201,7 +201,7 @@ module "prod-to-landing-primary-vpn" {
 
 module "prod-to-landing-secondary-vpn" {
   count      = local.spoke_connection == "vpn" ? 1 : 0
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v36.2.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpn-ha?ref=v37.4.0"
   project_id = module.prod-spoke-project.project_id
   network    = module.prod-spoke-vpc.self_link
   region     = var.regions.secondary
