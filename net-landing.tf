@@ -42,7 +42,7 @@ locals {
 }
 
 module "landing-project" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v37.4.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v38.2.0"
   billing_account = var.billing_account.id
   name            = "prod-net-landing-0"
   parent = coalesce(
@@ -68,7 +68,7 @@ module "landing-project" {
 }
 
 module "landing-vpc" {
-  source                          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v37.4.0"
+  source                          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v38.2.0"
   project_id                      = module.landing-project.project_id
   name                            = "prod-landing-0"
   mtu                             = var.vpc_configs.landing.mtu
@@ -93,7 +93,7 @@ module "landing-vpc" {
 }
 
 module "landing-firewall" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v37.4.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v38.2.0"
   count      = local.landing_cfg.fw_classic ? 1 : 0
   project_id = module.landing-project.project_id
   network    = module.landing-vpc.name
@@ -107,7 +107,7 @@ module "landing-firewall" {
 }
 
 module "landing-firewall-policy" {
-  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v37.4.0"
+  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v38.2.0"
   count     = local.landing_cfg.fw_policy ? 1 : 0
   name      = "prod-landing-0"
   parent_id = module.landing-project.project_id
@@ -124,7 +124,7 @@ module "landing-firewall-policy" {
 }
 
 module "landing-nat-primary" {
-  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v37.4.0"
+  source         = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v38.2.0"
   count          = local.landing_cfg.cloudnat ? 1 : 0
   project_id     = module.landing-project.project_id
   region         = var.regions.primary

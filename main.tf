@@ -30,11 +30,11 @@ locals {
     "roles/multiclusterservicediscovery.serviceAgent",
     "roles/vpcaccess.user",
   ]))
-  iam_delegated_principals = try(
-    var.stage_config["networking"].iam_delegated_principals, {}
+  iam_admin_delegated = try(
+    var.stage_config["networking"].iam_admin_delegated, {}
   )
-  iam_viewer_principals = try(
-    var.stage_config["networking"].iam_viewer_principals, {}
+  iam_viewer = try(
+    var.stage_config["networking"].iam_viewer, {}
   )
   # combine all regions from variables and subnets
   regions = distinct(concat(
@@ -51,7 +51,7 @@ locals {
 }
 
 module "folder" {
-  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder?ref=v37.4.0"
+  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder?ref=v38.2.0"
   folder_create = false
   id            = var.folder_ids.networking
   contacts = (
@@ -66,7 +66,7 @@ module "folder" {
 }
 
 module "firewall-policy-default" {
-  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v37.4.0"
+  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v38.2.0"
   name      = var.factories_config.firewall.hierarchical.policy_name
   parent_id = module.folder.id
   factories_config = {

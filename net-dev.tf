@@ -33,7 +33,7 @@ locals {
 }
 
 module "dev-spoke-project" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v37.4.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/project?ref=v38.2.0"
   billing_account = var.billing_account.id
   name            = "dev-net-spoke-0"
   parent = coalesce(
@@ -59,13 +59,13 @@ module "dev-spoke-project" {
   metric_scopes = [module.landing-project.project_id]
   # optionally delegate a fixed set of IAM roles to selected principals
   iam = {
-    (var.custom_roles.project_iam_viewer) = try(local.iam_viewer_principals["dev"], [])
+    (var.custom_roles.project_iam_viewer) = try(local.iam_viewer["dev"], [])
   }
   iam_bindings = (
-    lookup(local.iam_delegated_principals, "dev", null) == null ? {} : {
+    lookup(local.iam_admin_delegated, "dev", null) == null ? {} : {
       sa_delegated_grants = {
         role    = "roles/resourcemanager.projectIamAdmin"
-        members = try(local.iam_delegated_principals["dev"], [])
+        members = try(local.iam_admin_delegated["dev"], [])
         condition = {
           title       = "dev_stage3_sa_delegated_grants"
           description = "${var.environments["dev"].name} host project delegated grants."
@@ -83,7 +83,7 @@ module "dev-spoke-project" {
 }
 
 module "dev-spoke-vpc" {
-  source                          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v37.4.0"
+  source                          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc?ref=v38.2.0"
   project_id                      = module.dev-spoke-project.project_id
   name                            = "dev-spoke-0"
   mtu                             = var.vpc_configs.dev.mtu
@@ -114,7 +114,7 @@ module "dev-spoke-vpc" {
 }
 
 module "dev-spoke-firewall" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v37.4.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-vpc-firewall?ref=v38.2.0"
   count      = local.dev_cfg.fw_classic ? 1 : 0
   project_id = module.dev-spoke-project.project_id
   network    = module.dev-spoke-vpc.name
@@ -128,7 +128,7 @@ module "dev-spoke-firewall" {
 }
 
 module "dev-firewall-policy" {
-  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v37.4.0"
+  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v38.2.0"
   count     = local.dev_cfg.fw_policy ? 1 : 0
   name      = "dev-spoke-0"
   parent_id = module.dev-spoke-project.project_id
@@ -145,7 +145,7 @@ module "dev-firewall-policy" {
 }
 
 module "dev-spoke-cloudnat" {
-  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v37.4.0"
+  source = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-cloudnat?ref=v38.2.0"
   for_each = toset(
     local.dev_cfg.cloudnat ? values(module.dev-spoke-vpc.subnet_regions) : []
   )
