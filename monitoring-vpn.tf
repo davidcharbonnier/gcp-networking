@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 # tfdoc:file:description VPN monitoring alerts.
 
 resource "google_monitoring_alert_policy" "vpn_tunnel_established" {
-  count = (var.vpn_onprem_primary_config != null && var.alert_config.vpn_tunnel_established != null) ? 1 : 0
+  count = var.alert_config.vpn_tunnel_established != null ? 1 : 0
 
   project               = module.landing-project.project_id
   display_name          = "VPN Tunnel Established"
@@ -57,7 +57,7 @@ resource "google_monitoring_alert_policy" "vpn_tunnel_established" {
 
 # https://cloud.google.com/network-connectivity/docs/vpn/how-to/viewing-logs-metrics#define-bandwidth-alerts
 resource "google_monitoring_alert_policy" "vpn_tunnel_bandwidth" {
-  count = (var.vpn_onprem_primary_config != null && var.alert_config.vpn_tunnel_bandwidth != null) ? 1 : 0
+  count = var.alert_config.vpn_tunnel_bandwidth != null ? 1 : 0
 
   project               = module.landing-project.project_id
   display_name          = "VPN Tunnel Bandwidth usage"

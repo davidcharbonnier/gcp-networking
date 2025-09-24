@@ -1,23 +1,23 @@
-dns = {}
-
-psa_ranges = {
-  dev = {
-    ranges = {
-      cloudsql-mysql      = "10.128.62.0/24"
-      cloudsql-sqlserver  = "10.128.63.0/24"
-      cloudsql-postgresql = "10.128.64.0/24"
-    }
-    routes = null
-  }
-  prod = {
-    ranges = {
-      cloudsql-mysql      = "10.128.94.0/24"
-      cloudsql-sqlserver  = "10.128.95.0/24"
-      cloudsql-postgresql = "10.128.96.0/24"
-    }
-    routes = null
-  }
-}
+#psa_ranges = {
+#  dev = [
+#    {
+#      ranges = {
+#        cloudsql-mysql      = "10.68.1.0/24"
+#        cloudsql-sqlserver  = "10.68.2.0/24"
+#        cloudsql-postgresql = "10.68.3.0/24"
+#      }
+#    }
+#  ]
+#  prod = [
+#    {
+#      ranges = {
+#        cloudsql-mysql      = "10.72.1.0/24"
+#        cloudsql-sqlserver  = "10.72.2.0/24"
+#        cloudsql-postgresql = "10.72.3.0/24"
+#      }
+#    }
+#  ]
+#}
 
 regions = {
   primary   = "northamerica-northeast1"

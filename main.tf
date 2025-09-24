@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,25 @@
 # tfdoc:file:description Networking folder and hierarchical policy.
 
 locals {
+  env_tag_values = {
+    for k, v in var.environments :
+    k => var.tag_values["environment/${v.tag_name}"]
+  }
+  has_env_folders = var.folder_ids.networking-dev != null
+  iam_delegated = join(",", formatlist("'%s'", [
+    "roles/composer.sharedVpcAgent",
+    "roles/compute.networkUser",
+    "roles/compute.networkViewer",
+    "roles/container.hostServiceAgentUser",
+    "roles/multiclusterservicediscovery.serviceAgent",
+    "roles/vpcaccess.user",
+  ]))
+  iam_admin_delegated = try(
+    var.stage_config["networking"].iam_admin_delegated, {}
+  )
+  iam_viewer = try(
+    var.stage_config["networking"].iam_viewer, {}
+  )
   # combine all regions from variables and subnets
   regions = distinct(concat(
     values(var.regions),
@@ -24,39 +43,35 @@ locals {
     values(module.landing-vpc.subnet_regions),
     values(module.prod-spoke-vpc.subnet_regions),
   ))
-  custom_roles = coalesce(var.custom_roles, {})
-  stage3_sas_delegated_grants = [
-    "roles/composer.sharedVpcAgent",
-    "roles/compute.networkUser",
-    "roles/compute.networkViewer",
-    "roles/container.hostServiceAgentUser",
-    "roles/multiclusterservicediscovery.serviceAgent",
-    "roles/vpcaccess.user",
-  ]
-  service_accounts = {
-    for k, v in coalesce(var.service_accounts, {}) :
-    k => "serviceAccount:${v}" if v != null
-  }
+  spoke_connection = coalesce(
+    var.spoke_configs.peering_configs != null ? "peering" : null,
+    var.spoke_configs.vpn_configs != null ? "vpn" : null,
+    var.spoke_configs.ncc_configs != null ? "ncc" : null,
+  )
 }
 
 module "folder" {
-  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder?ref=v25.0.0"
-  parent        = "organizations/${var.organization.id}"
-  name          = "Networking"
-  folder_create = var.folder_ids.networking == null
+  source        = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/folder?ref=v38.2.0"
+  folder_create = false
   id            = var.folder_ids.networking
-  firewall_policy_associations = {
-    default = module.firewall-policy-default.id
+  contacts = (
+    var.essential_contacts == null
+    ? {}
+    : { (var.essential_contacts) = ["ALL"] }
+  )
+  firewall_policy = {
+    name   = "default"
+    policy = module.firewall-policy-default.id
   }
 }
 
 module "firewall-policy-default" {
-  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v25.0.0"
-  name      = "net-default"
+  source    = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/net-firewall-policy?ref=v38.2.0"
+  name      = var.factories_config.firewall.hierarchical.policy_name
   parent_id = module.folder.id
-  rules_factory_config = {
-    cidr_file_path          = "${var.factories_config.data_dir}/cidrs.yaml"
-    ingress_rules_file_path = "${var.factories_config.data_dir}/hierarchical-ingress-rules.yaml"
+  factories_config = {
+    cidr_file_path          = var.factories_config.firewall.cidr_file
+    ingress_rules_file_path = var.factories_config.firewall.hierarchical.ingress_rules
   }
 }
 

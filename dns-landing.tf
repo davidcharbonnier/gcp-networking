@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,49 +18,36 @@
 
 # forwarding to on-prem DNS resolvers
 
-moved {
-  from = module.onprem-example-dns-forwarding
-  to   = module.landing-dns-fwd-onprem-example
-}
-
 #module "landing-dns-fwd-onprem-example" {
-#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v25.0.0"
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v38.2.0"
+#  count      = length(var.dns.resolvers) > 0 ? 1 : 0
 #  project_id = module.landing-project.project_id
 #  name       = "example-com"
 #  zone_config = {
 #    domain = "onprem.example.com."
 #    forwarding = {
 #      client_networks = [module.landing-vpc.self_link]
-#      forwarders      = { for ip in var.dns.onprem : ip => null }
+#      forwarders      = { for ip in var.dns.resolvers : ip => null }
 #    }
 #  }
 #}
 
-moved {
-  from = module.reverse-10-dns-forwarding
-  to   = module.landing-dns-fwd-onprem-rev-10
-}
-
 #module "landing-dns-fwd-onprem-rev-10" {
-#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v25.0.0"
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v38.2.0"
+#  count      = length(var.dns.resolvers) > 0 ? 1 : 0
 #  project_id = module.landing-project.project_id
 #  name       = "root-reverse-10"
 #  zone_config = {
 #    domain = "10.in-addr.arpa."
 #    forwarding = {
 #      client_networks = [module.landing-vpc.self_link]
-#      forwarders      = { for ip in var.dns.onprem : ip => null }
+#      forwarders      = { for ip in var.dns.resolvers : ip => null }
 #    }
 #  }
 #}
 
-moved {
-  from = module.gcp-example-dns-private-zone
-  to   = module.landing-dns-priv-gcp
-}
-
 #module "landing-dns-priv-gcp" {
-#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v25.0.0"
+#  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v38.2.0"
 #  project_id = module.landing-project.project_id
 #  name       = "gcp-example-com"
 #  zone_config = {
@@ -75,21 +62,36 @@ moved {
 #}
 
 # Google APIs via response policies
+# the zone fixes issues with missing MX/SRV records when forwarding onprem
+
+module "landing-dns-priv-googleapis" {
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v38.2.0"
+  project_id = module.landing-project.project_id
+  name       = "googleapis-com"
+  zone_config = {
+    domain = "googleapis.com."
+    private = {
+      client_networks = [module.landing-vpc.self_link]
+    }
+  }
+}
 
 module "landing-dns-policy-googleapis" {
-  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns-response-policy?ref=v25.0.0"
+  source     = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns-response-policy?ref=v38.2.0"
   project_id = module.landing-project.project_id
   name       = "googleapis"
+  factories_config = {
+    rules = var.factories_config.dns_policy_rules
+  }
   networks = {
     landing = module.landing-vpc.self_link
   }
-  rules_file = var.factories_config.dns_policy_rules_file
 }
 
 # davidcharbonnier.fr public zone
 
 module "davidcharbonnier-dns-public-zone" {
-  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v25.0.0"
+  source          = "git@github.com:GoogleCloudPlatform/cloud-foundation-fabric.git//modules/dns?ref=v38.2.0"
   project_id      = module.landing-project.project_id
   name            = "davidcharbonnier-fr"
   zone_config = {
@@ -109,7 +111,7 @@ module "davidcharbonnier-dns-public-zone" {
     "A "        = { ttl = 0, records = ["75.2.60.5"] }
     "CNAME www" = { ttl = 0, records = ["davidcharbonnier.netlify.app."] }
     # Letencrypt
-    "CAA " = { ttl = 0, records = ["0 iodef \"mailto:contact@davidcharbonnier.fr\"", "0 issue \"letsencrypt.org\""] }
+    "CAA " = { ttl = 0, records = ["0 iodef \"mailto:contact@davidcharbonnier.fr\"", "0 issue \"letsencrypt.org\"", "0 issue \"pki.goog\""] }
     # Google Workspace
     "TXT " = { ttl = 0, records = ["google-site-verification=ufzEd-TjmFzEHsejF-PB0PIVwwlCTFiqP7JOyVx4u9s"] }
   }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2022 Google LLC
+ * Copyright 2024 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,20 +26,45 @@ locals {
     prod-spoke-0 = module.prod-spoke-project.number
   }
   subnet_self_links = {
-    prod-landing = module.landing-vpc.subnet_self_links
-    dev-spoke-0  = module.dev-spoke-vpc.subnet_self_links
-    prod-spoke-0 = module.prod-spoke-vpc.subnet_self_links
+    prod-landing = module.landing-vpc.subnet_ids
+    dev-spoke-0  = module.dev-spoke-vpc.subnet_ids
+    prod-spoke-0 = module.prod-spoke-vpc.subnet_ids
+  }
+  subnet_proxy_only_self_links = {
+    prod-landing = {
+      for k, v in module.landing-vpc.subnets_proxy_only : k => v.id
+    }
+    dev-spoke-0 = {
+      for k, v in module.dev-spoke-vpc.subnets_proxy_only : k => v.id
+    }
+    prod-spoke-0 = {
+      for k, v in module.prod-spoke-vpc.subnets_proxy_only : k => v.id
+    }
+  }
+  subnet_psc_self_links = {
+    prod-landing = {
+      for k, v in module.landing-vpc.subnets_psc : k => v.id
+    }
+    dev-spoke-0 = {
+      for k, v in module.dev-spoke-vpc.subnets_psc : k => v.id
+    }
+    prod-spoke-0 = {
+      for k, v in module.prod-spoke-vpc.subnets_psc : k => v.id
+    }
   }
   tfvars = {
-    host_project_ids     = local.host_project_ids
-    host_project_numbers = local.host_project_numbers
-    subnet_self_links    = local.subnet_self_links
-    vpc_self_links       = local.vpc_self_links
+    host_project_ids             = local.host_project_ids
+    host_project_numbers         = local.host_project_numbers
+    regions                      = var.regions
+    subnet_self_links            = local.subnet_self_links
+    subnet_proxy_only_self_links = local.subnet_proxy_only_self_links
+    subnet_psc_self_links        = local.subnet_psc_self_links
+    vpc_self_links               = local.vpc_self_links
   }
   vpc_self_links = {
-    prod-landing = module.landing-vpc.self_link
-    dev-spoke-0  = module.dev-spoke-vpc.self_link
-    prod-spoke-0 = module.prod-spoke-vpc.self_link
+    prod-landing = module.landing-vpc.id
+    dev-spoke-0  = module.dev-spoke-vpc.id
+    prod-spoke-0 = module.prod-spoke-vpc.id
   }
 }
 
